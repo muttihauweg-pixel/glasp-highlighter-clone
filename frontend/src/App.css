@@ -116,4 +116,6 @@ code {
   border-radius: 4px;
   border-left: 4px solid #4facfe;
   font-size: 0.9rem;
+  color: #00ff00;
+  font-family: 'Courier New', Courier, monospace;
 }
