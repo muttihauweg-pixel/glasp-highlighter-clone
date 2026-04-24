@@ -71,18 +71,64 @@ model = GenerativeModel(
     tools=[governance_tools]
 )
 
-def analyze_compliance(text):
+def analyze_compliance(text, image_bytes=None):
     """
     Analyzes user input with autonomous agent capabilities and function calling.
+    Returns a dictionary containing the final report and a log of agent actions.
     """
+    thought_log = []
+    final_text = ""
+
     try:
         chat = model.start_chat()
-        response = chat.send_message(text)
 
-        # Check for function calls
-        # Note: In a production app, you'd handle the function call execution here
-        # and send the response back to the model. For the demo, we show the intent.
+        # Initial prompt
+        parts = [text]
+        if image_bytes:
+            parts.append(Part.from_data(data=image_bytes, mime_type="image/jpeg"))
 
-        return response.text
+        response = chat.send_message(parts)
+
+        # Function calling loop (max 5 iterations to prevent infinite loops)
+        for _ in range(5):
+            # Check for function calls in the candidate
+            function_calls = response.candidates[0].function_calls
+
+            if not function_calls:
+                final_text = response.text
+                break
+
+            # Process function calls
+            responses_parts = []
+            for function_call in function_calls:
+                name = function_call.name
+                params = {key: value for key, value in function_call.args.items()}
+
+                # Mock execution of tools
+                if name == "save_to_google_docs":
+                    thought_log.append(f"Action: Saving compliance report to Google Docs ('{params.get('title')}')")
+                    result = {"status": "success", "doc_url": "https://docs.google.com/document/d/12345"}
+                elif name == "notify_governance_admin":
+                    thought_log.append(f"Action: Notifying Governance Admin. Risk: {params.get('risk_level')}. Reason: {params.get('reason')}")
+                    result = {"status": "notified", "priority": "high"}
+                else:
+                    result = {"error": "Unknown tool"}
+
+                responses_parts.append(Part.from_function_response(
+                    name=name,
+                    response=result
+                ))
+
+            # Send the results back to the model
+            response = chat.send_message(responses_parts)
+
+        return {
+            "report": final_text or response.text,
+            "thought_log": thought_log
+        }
+
     except Exception as e:
-        return f"Governance Analysis (Demo Mode): Analysis for '{text}'. Error: {str(e)}"
+        return {
+            "report": f"Governance Analysis (Demo Mode): Error: {str(e)}",
+            "thought_log": [f"Error encountered: {str(e)}"]
+        }

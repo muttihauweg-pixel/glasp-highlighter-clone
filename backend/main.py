@@ -3,6 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import hashlib
 import datetime
+import base64
+from typing import Optional
 from gemini import analyze_compliance
 
 app = FastAPI()
@@ -16,6 +18,7 @@ app.add_middleware(
 
 class ProcessRequest(BaseModel):
     input: str
+    image: Optional[str] = None  # Base64 encoded image
 
 @app.get("/")
 def read_root():
@@ -24,19 +27,54 @@ def read_root():
 @app.post("/process")
 async def process_input(request: ProcessRequest):
     user_input = request.input
+    image_data = request.image
 
     try:
-        # 1. AI Analysis (Governance Layer)
-        compliance_report = analyze_compliance(user_input)
+        image_bytes = None
+        if image_data:
+            # Decode base64 image if present
+            try:
+                if "," in image_data:
+                    image_data = image_data.split(",")[1]
+                image_bytes = base64.b64decode(image_data)
+            except Exception as e:
+                print(f"Error decoding image: {e}")
 
-        # 2. Mock Logic for Demo (Mapping LLM output to UI structure)
-        # In a real app, you'd parse the LLM output properly
-        risk_level = "High" if "high" in compliance_report.lower() else "Low"
+        # 1. AI Analysis (Governance Layer)
+        analysis_result = analyze_compliance(user_input, image_bytes)
+        compliance_report = analysis_result["report"]
+        thought_log = analysis_result["thought_log"]
+
+        # 2. Extract risk level from report or logs
+        # Heuristic: if any 'High' or 'Unacceptable' is mentioned, or if admin was notified
+        risk_level = "Minimal"
+        report_lower = compliance_report.lower()
+
+        if "unacceptable" in report_lower:
+            risk_level = "Unacceptable"
+        elif "high" in report_lower or any("notify_governance_admin" in log for log in thought_log):
+            risk_level = "High"
+        elif "limited" in report_lower:
+            risk_level = "Limited"
+
+        # Construct execution steps from agent logs
+        execution_steps = ["Request Received"]
+        if image_bytes:
+            execution_steps.append("Multimodal Analysis")
+        else:
+            execution_steps.append("Text Analysis")
+
+        for log in thought_log:
+            # Clean up log for UI
+            step = log.replace("Action: ", "")
+            execution_steps.append(step)
+
+        execution_steps.append("Final Compliance Report Generated")
 
         result = {
             "risk": risk_level,
-            "steps": ["Input Received", "Compliance Check", "Policy Enforcement", "Output Generated"],
-            "processed_output": f"Safe execution of: {user_input[:50]}..."
+            "steps": execution_steps,
+            "processed_output": compliance_report[:500] + ("..." if len(compliance_report) > 500 else "")
         }
 
         # 3. Audit Trail
@@ -51,7 +89,7 @@ async def process_input(request: ProcessRequest):
         return {
             "result": result,
             "audit": audit,
-            "compliance_report": compliance_report # Added for extra detail
+            "compliance_report": compliance_report
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
