@@ -71,18 +71,60 @@ model = GenerativeModel(
     tools=[governance_tools]
 )
 
-def analyze_compliance(text):
+def analyze_compliance(text, image_bytes=None, mime_type="image/jpeg"):
     """
-    Analyzes user input with autonomous agent capabilities and function calling.
+    Analyzes user input with autonomous agent capabilities, multimodal support, and function calling.
     """
+    actions_taken = []
+
+    content = [text]
+    if image_bytes:
+        image_part = Part.from_data(data=image_bytes, mime_type=mime_type)
+        content.append(image_part)
+
     try:
         chat = model.start_chat()
-        response = chat.send_message(text)
+        response = chat.send_message(content)
 
-        # Check for function calls
-        # Note: In a production app, you'd handle the function call execution here
-        # and send the response back to the model. For the demo, we show the intent.
+        # Recursive loop for function calls
+        while True:
+            if not response.candidates[0].function_calls:
+                break
 
-        return response.text
+            tool_responses = []
+            for function_call in response.candidates[0].function_calls:
+                name = function_call.name
+                args = function_call.args
+
+                actions_taken.append({
+                    "name": name,
+                    "params": dict(args)
+                })
+
+                # Mocking execution of tools
+                if name == "save_to_google_docs":
+                    result = {"status": "success", "doc_url": "https://docs.google.com/example"}
+                elif name == "notify_governance_admin":
+                    result = {"status": "notified", "admin_id": "admin_01"}
+                else:
+                    result = {"status": "error", "message": "Unknown tool"}
+
+                tool_responses.append(
+                    Part.from_function_response(
+                        name=name,
+                        response=result
+                    )
+                )
+
+            # Send function responses back to model
+            response = chat.send_message(tool_responses)
+
+        return {
+            "text": response.text,
+            "actions": actions_taken
+        }
     except Exception as e:
-        return f"Governance Analysis (Demo Mode): Analysis for '{text}'. Error: {str(e)}"
+        return {
+            "text": f"Governance Analysis Error: {str(e)}",
+            "actions": actions_taken
+        }
