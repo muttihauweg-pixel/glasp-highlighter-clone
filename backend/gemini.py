@@ -7,6 +7,7 @@ from vertexai.generative_models import (
     Content
 )
 import os
+import json
 
 PROJECT_ID = os.environ.get("GOOGLE_CLOUD_PROJECT", "YOUR_PROJECT_ID")
 LOCATION = os.environ.get("GOOGLE_CLOUD_LOCATION", "europe-west4")
@@ -62,7 +63,7 @@ AVAILABLE ACTIONS:
 - If an analysis is complete and safe, suggest saving it to Google Docs for record-keeping using `save_to_google_docs`.
 - If a request is 'High' or 'Unacceptable' risk, you MUST notify the admin using `notify_governance_admin`.
 
-Respond in a professional, authoritative tone.
+When you identify a risk level, explicitly state it at the beginning of your final summary in the format: 'RISK LEVEL: [Level]'.
 """
 
 model = GenerativeModel(
@@ -71,18 +72,50 @@ model = GenerativeModel(
     tools=[governance_tools]
 )
 
-def analyze_compliance(text):
+def handle_function_call(function_call):
+    """Mocks the execution of tool calls for the demo."""
+    name = function_call.name
+    params = function_call.args
+
+    if name == "save_to_google_docs":
+        print(f"[TOOL] Saving to Google Docs: {params['title']}")
+        return {"status": "success", "message": f"Document '{params['title']}' created successfully."}
+
+    if name == "notify_governance_admin":
+        print(f"[TOOL] Notifying Admin: {params['risk_level']}")
+        return {"status": "notified", "admin_response": "Acknowledged. Review scheduled."}
+
+    return {"error": "Unknown function"}
+
+def analyze_compliance(text, image_bytes=None, mime_type=None):
     """
-    Analyzes user input with autonomous agent capabilities and function calling.
+    Analyzes user input with autonomous agent capabilities, multimodality, and recursive function calling.
     """
     try:
         chat = model.start_chat()
-        response = chat.send_message(text)
 
-        # Check for function calls
-        # Note: In a production app, you'd handle the function call execution here
-        # and send the response back to the model. For the demo, we show the intent.
+        content = [text]
+        if image_bytes and mime_type:
+            content.append(Part.from_data(data=image_bytes, mime_type=mime_type))
+
+        response = chat.send_message(content)
+
+        # Recursive loop for function calling
+        for _ in range(5): # Limit recursion to avoid infinite loops
+            if not response.candidates[0].content.parts[0].function_call:
+                break
+
+            function_call = response.candidates[0].content.parts[0].function_call
+            function_response = handle_function_call(function_call)
+
+            # Send the result back to the model
+            response = chat.send_message(
+                Part.from_function_response(
+                    name=function_call.name,
+                    response=function_response
+                )
+            )
 
         return response.text
     except Exception as e:
-        return f"Governance Analysis (Demo Mode): Analysis for '{text}'. Error: {str(e)}"
+        return f"Governance Analysis Error: {str(e)}"
