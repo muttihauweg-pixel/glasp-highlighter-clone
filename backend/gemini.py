@@ -7,6 +7,7 @@ from vertexai.generative_models import (
     Content
 )
 import os
+import base64
 
 PROJECT_ID = os.environ.get("GOOGLE_CLOUD_PROJECT", "YOUR_PROJECT_ID")
 LOCATION = os.environ.get("GOOGLE_CLOUD_LOCATION", "europe-west4")
@@ -71,18 +72,83 @@ model = GenerativeModel(
     tools=[governance_tools]
 )
 
-def analyze_compliance(text):
+def analyze_compliance(text, image_data=None):
     """
     Analyzes user input with autonomous agent capabilities and function calling.
+    Supports multimodal input.
     """
+    steps = ["Input Received", "AI Agent Initialized"]
+
+    # Prepare contents
+    content_parts = [text]
+
+    if image_data:
+        steps.append("Image Data Decoded")
+        # Extract mime type and data from base64 string
+        if "," in image_data:
+            header, encoded = image_data.split(",", 1)
+            mime_type = header.split(":")[1].split(";")[0]
+        else:
+            encoded = image_data
+            mime_type = "image/png" # Default
+
+        image_bytes = base64.b64decode(encoded)
+        content_parts.append(Part.from_data(data=image_bytes, mime_type=mime_type))
+
     try:
         chat = model.start_chat()
-        response = chat.send_message(text)
+        steps.append("Risk Assessment Started")
+        response = chat.send_message(content_parts)
 
-        # Check for function calls
-        # Note: In a production app, you'd handle the function call execution here
-        # and send the response back to the model. For the demo, we show the intent.
+        risk_level = "Minimal"
 
-        return response.text
+        # Recursive Loop for Function Calling
+        for _ in range(5): # Limit to 5 iterations
+            if not response.candidates[0].function_calls:
+                break
+
+            tool_responses = []
+            for function_call in response.candidates[0].function_calls:
+                name = function_call.name
+                args = function_call.args
+
+                if name == "notify_governance_admin":
+                    risk_level = args.get("risk_level", "High")
+                    steps.append(f"Action: Admin Notified ({risk_level})")
+                    # Mock response for the tool
+                    tool_response_content = {"status": "Administrator notified and audit log locked."}
+                elif name == "save_to_google_docs":
+                    steps.append(f"Action: Saved to Google Docs ({args.get('title')})")
+                    tool_response_content = {"status": "Report saved successfully.", "doc_id": "mock_id_123"}
+                else:
+                    tool_response_content = {"error": "Unknown tool"}
+
+                tool_responses.append(
+                    Part.from_function_response(
+                        name=name,
+                        response=tool_response_content
+                    )
+                )
+
+            # Send all tool responses at once
+            response = chat.send_message(tool_responses)
+
+        # Final heuristic to determine risk if not set by tool
+        lower_report = response.text.lower()
+        if "unacceptable" in lower_report: risk_level = "Unacceptable"
+        elif "high" in lower_report: risk_level = "High"
+        elif "limited" in lower_report: risk_level = "Limited"
+
+        steps.append("Policy Enforcement Complete")
+
+        return {
+            "report": response.text,
+            "risk_level": risk_level,
+            "steps": steps
+        }
     except Exception as e:
-        return f"Governance Analysis (Demo Mode): Analysis for '{text}'. Error: {str(e)}"
+        return {
+            "report": f"Error: {str(e)}",
+            "risk_level": "Unknown",
+            "steps": steps + [f"Error: {str(e)}"]
+        }
