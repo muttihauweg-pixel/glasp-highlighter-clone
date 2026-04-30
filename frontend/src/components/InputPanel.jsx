@@ -1,12 +1,35 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 
 export default function InputPanel({ onSubmit, disabled }) {
   const [input, setInput] = useState("");
+  const [image, setImage] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
+  const fileInputRef = useRef(null);
+
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImage(reader.result);
+        setImagePreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removeImage = () => {
+    setImage(null);
+    setImagePreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (input.trim()) {
-      onSubmit(input);
+    if (input.trim() || image) {
+      onSubmit(input, image);
     }
   };
 
@@ -19,11 +42,35 @@ export default function InputPanel({ onSubmit, disabled }) {
           onChange={(e) => setInput(e.target.value)}
           placeholder="Enter AI request (e.g., 'Analyze customer data for credit scoring')"
           rows={5}
-          cols={50}
           disabled={disabled}
         />
-        <br />
-        <button type="submit" disabled={disabled || !input.trim()}>
+
+        <div className="upload-section">
+          <input
+            type="file"
+            accept="image/*"
+            onChange={handleImageChange}
+            ref={fileInputRef}
+            style={{ display: "none" }}
+          />
+          <button
+            type="button"
+            className="secondary-btn"
+            onClick={() => fileInputRef.current.click()}
+            disabled={disabled}
+          >
+            📷 Upload Screenshot/Data
+          </button>
+
+          {imagePreview && (
+            <div className="preview-container">
+              <img src={imagePreview} alt="Preview" className="image-preview" />
+              <button type="button" className="remove-btn" onClick={removeImage}>✕</button>
+            </div>
+          )}
+        </div>
+
+        <button type="submit" disabled={disabled || (!input.trim() && !image)}>
           Process Request
         </button>
       </form>
