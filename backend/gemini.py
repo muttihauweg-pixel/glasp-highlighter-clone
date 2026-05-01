@@ -7,6 +7,7 @@ from vertexai.generative_models import (
     Content
 )
 import os
+import base64
 
 PROJECT_ID = os.environ.get("GOOGLE_CLOUD_PROJECT", "YOUR_PROJECT_ID")
 LOCATION = os.environ.get("GOOGLE_CLOUD_LOCATION", "europe-west4")
@@ -62,27 +63,77 @@ AVAILABLE ACTIONS:
 - If an analysis is complete and safe, suggest saving it to Google Docs for record-keeping using `save_to_google_docs`.
 - If a request is 'High' or 'Unacceptable' risk, you MUST notify the admin using `notify_governance_admin`.
 
-Respond in a professional, authoritative tone.
+IMPORTANT: ALWAYS include 'RISK_ASSESSMENT: <level>' in your final response.
 """
 
-model = GenerativeModel(
-    "gemini-1.5-pro",
-    system_instruction=SYSTEM_INSTRUCTION,
-    tools=[governance_tools]
-)
+def get_model():
+    return GenerativeModel(
+        "gemini-1.5-pro",
+        system_instruction=SYSTEM_INSTRUCTION,
+        tools=[governance_tools]
+    )
 
-def analyze_compliance(text):
+def analyze_compliance(text, image_data=None):
     """
     Analyzes user input with autonomous agent capabilities and function calling.
+    Supports multimodal input.
     """
-    try:
-        chat = model.start_chat()
-        response = chat.send_message(text)
+    model = get_model()
+    chat = model.start_chat()
 
-        # Check for function calls
-        # Note: In a production app, you'd handle the function call execution here
-        # and send the response back to the model. For the demo, we show the intent.
+    content_parts = [Part.from_text(text)]
 
-        return response.text
-    except Exception as e:
-        return f"Governance Analysis (Demo Mode): Analysis for '{text}'. Error: {str(e)}"
+    if image_data:
+        # Assuming image_data is a base64 string with header like "data:image/png;base64,..."
+        if "," in image_data:
+            header, base64_str = image_data.split(",", 1)
+            mime_type = header.split(":")[1].split(";")[0]
+        else:
+            base64_str = image_data
+            mime_type = "image/png" # Default
+
+        image_bytes = base64.b64decode(base64_str)
+        content_parts.append(Part.from_data(data=image_bytes, mime_type=mime_type))
+
+    response = chat.send_message(content_parts)
+
+    execution_steps = ["Input Received", "Initial Analysis"]
+
+    # Agentic Loop for Function Calling
+    max_iterations = 5
+    for _ in range(max_iterations):
+        function_call = None
+        # Check if the last response part has a function call
+        for part in response.candidates[0].content.parts:
+            if part.function_call:
+                function_call = part.function_call
+                break
+
+        if not function_call:
+            break
+
+        function_name = function_call.name
+        execution_steps.append(f"Tool Use: {function_name}")
+
+        # Mocking tool execution results
+        if function_name == "save_to_google_docs":
+            api_response = {"status": "success", "doc_id": "mock-doc-123"}
+        elif function_name == "notify_governance_admin":
+            api_response = {"status": "delivered", "priority": "high"}
+        else:
+            api_response = {"error": "Unknown tool"}
+
+        # Send the function response back to the model
+        response = chat.send_message(
+            Part.from_function_response(
+                name=function_name,
+                response=api_response
+            )
+        )
+
+    execution_steps.append("Final Compliance Report Generated")
+
+    return {
+        "text": response.text,
+        "steps": execution_steps
+    }
