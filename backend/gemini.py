@@ -7,6 +7,7 @@ from vertexai.generative_models import (
     Content
 )
 import os
+import base64
 
 PROJECT_ID = os.environ.get("GOOGLE_CLOUD_PROJECT", "YOUR_PROJECT_ID")
 LOCATION = os.environ.get("GOOGLE_CLOUD_LOCATION", "europe-west4")
@@ -62,27 +63,83 @@ AVAILABLE ACTIONS:
 - If an analysis is complete and safe, suggest saving it to Google Docs for record-keeping using `save_to_google_docs`.
 - If a request is 'High' or 'Unacceptable' risk, you MUST notify the admin using `notify_governance_admin`.
 
-Respond in a professional, authoritative tone.
+At the end of your response, you MUST include a summary in this exact format:
+RISK_ASSESSMENT: [Risk Level]
+REASON: [Short Reason]
 """
 
+# Initialize Model outside to avoid re-init in loop if possible,
+# but keep it flexible for structured output if needed later.
 model = GenerativeModel(
     "gemini-1.5-pro",
     system_instruction=SYSTEM_INSTRUCTION,
     tools=[governance_tools]
 )
 
-def analyze_compliance(text):
+def analyze_compliance(text, image_data=None):
     """
-    Analyzes user input with autonomous agent capabilities and function calling.
+    Analyzes user input with autonomous agent capabilities, function calling, and multimodality.
     """
     try:
-        chat = model.start_chat()
-        response = chat.send_message(text)
+        # Re-initialize to ensure fresh state if needed, though start_chat usually handles it.
+        # However, to be extra safe with tool state/history:
+        current_model = GenerativeModel(
+            "gemini-1.5-pro",
+            system_instruction=SYSTEM_INSTRUCTION,
+            tools=[governance_tools]
+        )
 
-        # Check for function calls
-        # Note: In a production app, you'd handle the function call execution here
-        # and send the response back to the model. For the demo, we show the intent.
+        content_parts = [Part.from_text(text)]
 
-        return response.text
+        if image_data:
+            if "," in image_data:
+                header, base64_str = image_data.split(",", 1)
+                mime_type = header.split(";")[0].split(":")[1]
+            else:
+                base64_str = image_data
+                mime_type = "image/png"
+
+            image_bytes = base64.b64decode(base64_str)
+            content_parts.append(Part.from_data(data=image_bytes, mime_type=mime_type))
+
+        chat = current_model.start_chat()
+        response = chat.send_message(content_parts)
+
+        execution_steps = ["User Input Received"]
+
+        iterations = 0
+        max_iterations = 5
+
+        while response.candidates[0].content.parts[0].function_call and iterations < max_iterations:
+            iterations += 1
+            function_call = response.candidates[0].content.parts[0].function_call
+            function_name = function_call.name
+
+            execution_steps.append(f"Agent Action: {function_name}")
+
+            # Mock Tool Execution
+            if function_name == "save_to_google_docs":
+                result = {"status": "success", "doc_url": "https://docs.google.com/example"}
+            elif function_name == "notify_governance_admin":
+                result = {"status": "notified", "admin": "Governance Board"}
+            else:
+                result = {"error": "Unknown tool"}
+
+            response = chat.send_message(
+                Part.from_function_response(
+                    name=function_name,
+                    response=result
+                )
+            )
+
+        execution_steps.append("Final Policy Decision")
+
+        return {
+            "text": response.text,
+            "steps": execution_steps
+        }
     except Exception as e:
-        return f"Governance Analysis (Demo Mode): Analysis for '{text}'. Error: {str(e)}"
+        return {
+            "text": f"Governance Analysis (Demo Mode): Analysis failed. Error: {str(e)}",
+            "steps": ["Input Received", "Error Encountered"]
+        }
