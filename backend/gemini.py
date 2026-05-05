@@ -7,6 +7,7 @@ from vertexai.generative_models import (
     Content
 )
 import os
+import json
 
 PROJECT_ID = os.environ.get("GOOGLE_CLOUD_PROJECT", "YOUR_PROJECT_ID")
 LOCATION = os.environ.get("GOOGLE_CLOUD_LOCATION", "europe-west4")
@@ -62,27 +63,66 @@ AVAILABLE ACTIONS:
 - If an analysis is complete and safe, suggest saving it to Google Docs for record-keeping using `save_to_google_docs`.
 - If a request is 'High' or 'Unacceptable' risk, you MUST notify the admin using `notify_governance_admin`.
 
-Respond in a professional, authoritative tone.
+Respond in a professional, authoritative tone. Ensure your final response includes the risk level clearly.
 """
 
-model = GenerativeModel(
-    "gemini-1.5-pro",
-    system_instruction=SYSTEM_INSTRUCTION,
-    tools=[governance_tools]
-)
+def get_model():
+    return GenerativeModel(
+        "gemini-1.5-pro",
+        system_instruction=SYSTEM_INSTRUCTION,
+        tools=[governance_tools]
+    )
 
-def analyze_compliance(text):
+def analyze_compliance(text, image_bytes=None, image_mime_type=None):
     """
-    Analyzes user input with autonomous agent capabilities and function calling.
+    Analyzes user input with autonomous agent capabilities, function calling, and multimodal support.
     """
+    model = get_model()
+    chat = model.start_chat()
+
+    content = [text]
+    if image_bytes and image_mime_type:
+        content.append(Part.from_data(data=image_bytes, mime_type=image_mime_type))
+
+    execution_history = []
+
     try:
-        chat = model.start_chat()
-        response = chat.send_message(text)
+        response = chat.send_message(content)
 
-        # Check for function calls
-        # Note: In a production app, you'd handle the function call execution here
-        # and send the response back to the model. For the demo, we show the intent.
+        # Simple loop to handle function calls (max 5 iterations for safety)
+        for _ in range(5):
+            if not response.candidates[0].function_calls:
+                break
 
-        return response.text
+            for function_call in response.candidates[0].function_calls:
+                func_name = function_call.name
+                args = {k: v for k, v in function_call.args.items()}
+
+                execution_history.append({
+                    "action": func_name,
+                    "params": args
+                })
+
+                # In this demo, we mock the tool execution response
+                # In a real app, you would execute the actual logic here
+                tool_response = {
+                    "status": "success",
+                    "message": f"Successfully executed {func_name}"
+                }
+
+                response = chat.send_message(
+                    Part.from_function_response(
+                        name=func_name,
+                        response={"content": tool_response}
+                    )
+                )
+
+        return {
+            "text": response.text,
+            "history": execution_history
+        }
     except Exception as e:
-        return f"Governance Analysis (Demo Mode): Analysis for '{text}'. Error: {str(e)}"
+        return {
+            "text": f"Governance Analysis Error: {str(e)}",
+            "history": [{"action": "Error", "params": {"detail": str(e)}}]
+        }
