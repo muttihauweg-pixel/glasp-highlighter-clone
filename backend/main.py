@@ -1,8 +1,11 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from typing import Optional
 import hashlib
 import datetime
+import base64
+import re
 from gemini import analyze_compliance
 
 app = FastAPI()
@@ -16,6 +19,7 @@ app.add_middleware(
 
 class ProcessRequest(BaseModel):
     input: str
+    image: Optional[str] = None # Base64 encoded image
 
 @app.get("/")
 def read_root():
@@ -24,24 +28,50 @@ def read_root():
 @app.post("/process")
 async def process_input(request: ProcessRequest):
     user_input = request.input
+    image_data = None
+    mime_type = None
+
+    if request.image:
+        try:
+            # Extract mime type and base64 data
+            if "," in request.image:
+                header, encoded = request.image.split(",", 1)
+                mime_type = header.split(":")[1].split(";")[0]
+                image_data = base64.b64decode(encoded)
+            else:
+                image_data = base64.b64decode(request.image)
+                mime_type = "image/jpeg" # Default
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Invalid image data: {str(e)}")
 
     try:
         # 1. AI Analysis (Governance Layer)
-        compliance_report = analyze_compliance(user_input)
+        analysis_result = analyze_compliance(user_input, image_data, mime_type)
+        compliance_report = analysis_result["text"]
+        history = analysis_result["history"]
 
-        # 2. Mock Logic for Demo (Mapping LLM output to UI structure)
-        # In a real app, you'd parse the LLM output properly
-        risk_level = "High" if "high" in compliance_report.lower() else "Low"
+        # 2. Risk Level Extraction
+        # Try to extract risk level from the report
+        risk_match = re.search(r"(Unacceptable|High|Limited|Minimal)", compliance_report, re.IGNORECASE)
+        risk_level = risk_match.group(0).capitalize() if risk_match else "Limited"
+
+        # Construct steps for the UI
+        steps = ["Input Received", "Multimodal Analysis", "Policy Verification"]
+        for action in history:
+            steps.append(f"Action: {action['action']}")
+        steps.append("Audit Logged")
 
         result = {
             "risk": risk_level,
-            "steps": ["Input Received", "Compliance Check", "Policy Enforcement", "Output Generated"],
-            "processed_output": f"Safe execution of: {user_input[:50]}..."
+            "steps": steps,
+            "processed_output": compliance_report[:200] + "..." if len(compliance_report) > 200 else compliance_report,
+            "agent_history": history
         }
 
         # 3. Audit Trail
         timestamp = datetime.datetime.now().isoformat()
-        audit_hash = hashlib.sha256(f"{user_input}{timestamp}".encode()).hexdigest()
+        audit_content = f"{user_input}{timestamp}"
+        audit_hash = hashlib.sha256(audit_content.encode()).hexdigest()
 
         audit = {
             "hash": audit_hash,
@@ -51,9 +81,11 @@ async def process_input(request: ProcessRequest):
         return {
             "result": result,
             "audit": audit,
-            "compliance_report": compliance_report # Added for extra detail
+            "compliance_report": compliance_report
         }
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
