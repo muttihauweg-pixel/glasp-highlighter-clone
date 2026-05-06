@@ -7,12 +7,11 @@ from vertexai.generative_models import (
     Content
 )
 import os
+import json
+import re
 
 PROJECT_ID = os.environ.get("GOOGLE_CLOUD_PROJECT", "YOUR_PROJECT_ID")
 LOCATION = os.environ.get("GOOGLE_CLOUD_LOCATION", "europe-west4")
-
-# Initialize Vertex AI
-vertexai.init(project=PROJECT_ID, location=LOCATION)
 
 # --- 1. Define Function Calling Tools ---
 save_to_docs_declaration = FunctionDeclaration(
@@ -62,27 +61,69 @@ AVAILABLE ACTIONS:
 - If an analysis is complete and safe, suggest saving it to Google Docs for record-keeping using `save_to_google_docs`.
 - If a request is 'High' or 'Unacceptable' risk, you MUST notify the admin using `notify_governance_admin`.
 
-Respond in a professional, authoritative tone.
+MULTIMODAL CAPABILITY:
+You can analyze both text and images. If an image is provided (e.g., a UI screenshot), check for dark patterns or manipulative designs prohibited by the EU AI Act.
+
+OUTPUT FORMAT:
+Always conclude your analysis with a JSON block containing the risk assessment:
+```json
+{
+  "risk_level": "Unacceptable" | "High" | "Limited" | "Minimal",
+  "rationale": "Brief explanation"
+}
+```
 """
 
-model = GenerativeModel(
-    "gemini-1.5-pro",
-    system_instruction=SYSTEM_INSTRUCTION,
-    tools=[governance_tools]
-)
+def get_model():
+    # Initialize Vertex AI here to allow mocking in tests
+    vertexai.init(project=PROJECT_ID, location=LOCATION)
+    return GenerativeModel(
+        "gemini-1.5-pro",
+        system_instruction=SYSTEM_INSTRUCTION,
+        tools=[governance_tools]
+    )
 
-def analyze_compliance(text):
+def analyze_compliance(text, image_bytes=None, mime_type=None):
     """
-    Analyzes user input with autonomous agent capabilities and function calling.
+    Analyzes user input with autonomous agent capabilities, function calling, and multimodality.
     """
-    try:
-        chat = model.start_chat()
-        response = chat.send_message(text)
+    model = get_model()
+    chat = model.start_chat()
 
-        # Check for function calls
-        # Note: In a production app, you'd handle the function call execution here
-        # and send the response back to the model. For the demo, we show the intent.
+    content_parts = [Part.from_text(text)]
+    if image_bytes and mime_type:
+        content_parts.append(Part.from_data(data=image_bytes, mime_type=mime_type))
 
-        return response.text
-    except Exception as e:
-        return f"Governance Analysis (Demo Mode): Analysis for '{text}'. Error: {str(e)}"
+    response = chat.send_message(content_parts)
+
+    execution_steps = []
+
+    # Recursive loop for function calling (limit to 5 iterations for safety)
+    for _ in range(5):
+        if not response.candidates[0].function_calls:
+            break
+
+        function_calls = response.candidates[0].function_calls
+        tool_responses = []
+
+        for function_call in function_calls:
+            name = function_call.name
+            args = {k: v for k, v in function_call.args.items()}
+            execution_steps.append({"action": name, "params": args})
+
+            # Mock execution of tools
+            result = {"status": "success", "message": f"Executed {name} successfully"}
+
+            tool_responses.append(
+                Part.from_function_response(
+                    name=name,
+                    response=result
+                )
+            )
+
+        response = chat.send_message(tool_responses)
+
+    return {
+        "text": response.text,
+        "steps": execution_steps
+    }
