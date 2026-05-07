@@ -10,11 +10,11 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const handleSubmit = async (input) => {
+  const handleSubmit = async (input, image) => {
     setLoading(true);
     setError(null);
     try {
-      const res = await processInput(input);
+      const res = await processInput(input, image);
       setData(res);
     } catch (err) {
       setError(err.message);
@@ -25,22 +25,40 @@ export default function App() {
 
   return (
     <div className="container">
-      <h1>AI Governance OS</h1>
-      <InputPanel onSubmit={handleSubmit} disabled={loading} />
+      <header>
+        <h1>AI Governance OS</h1>
+        <p className="subtitle">Autonomous EU AI Act Compliance Layer</p>
+      </header>
 
-      {loading && <p>Processing with Gemini 1.5 Pro...</p>}
-      {error && <p style={{color: 'red'}}>Error: {error}</p>}
+      <main className="main-content">
+        <InputPanel onSubmit={handleSubmit} disabled={loading} />
 
-      {data && (
-        <div className="dashboard">
-          <FlowGraph result={data.result} />
-          <AuditTimeline audit={data.audit} />
-          <div className="compliance-report">
-            <h2>Compliance Analysis</h2>
-            <pre>{data.compliance_report}</pre>
+        {loading && (
+          <div className="loading-state">
+            <div className="spinner"></div>
+            <p>Gemini 1.5 Pro is analyzing your request...</p>
           </div>
-        </div>
-      )}
+        )}
+
+        {error && <div className="error-message">Error: {error}</div>}
+
+        {data && (
+          <div className="dashboard-grid">
+            <div className="left-col">
+              <FlowGraph result={data.result} />
+              <AuditTimeline audit={data.audit} />
+            </div>
+            <div className="right-col">
+              <div className="panel compliance-report">
+                <h2>Compliance Analysis</h2>
+                <div className="report-content">
+                  {data.compliance_report}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </main>
     </div>
   );
 }
