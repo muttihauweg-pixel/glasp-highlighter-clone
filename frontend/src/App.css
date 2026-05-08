@@ -1,10 +1,10 @@
 :root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-family: 'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
+  color-scheme: dark;
+  color: #e2e8f0;
+  background-color: #0f172a;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -17,9 +17,11 @@ body {
   place-items: center;
   min-width: 320px;
   min-height: 100vh;
+  background: radial-gradient(circle at top right, #1e293b, #0f172a);
 }
 
 #root {
+  width: 100%;
   max-width: 1280px;
   margin: 0 auto;
   padding: 2rem;
@@ -30,90 +32,151 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2rem;
+  gap: 2.5rem;
+  width: 100%;
 }
 
 .panel {
-  background-color: #1a1a1a;
-  border-radius: 8px;
-  padding: 1.5rem;
+  background: rgba(30, 41, 59, 0.5);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 2rem;
   width: 100%;
-  max-width: 800px;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  max-width: 850px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
   text-align: left;
 }
 
 h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
-  margin-bottom: 0.5em;
-  background: linear-gradient(to right, #4facfe 0%, #00f2fe 100%);
+  font-size: 3.5rem;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  margin-bottom: 0.25em;
+  background: linear-gradient(135deg, #60a5fa 0%, #a855f7 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
 textarea {
   width: 100%;
-  padding: 0.5rem;
-  border-radius: 4px;
-  border: 1px solid #333;
-  background-color: #2a2a2a;
-  color: white;
+  padding: 1rem;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(15, 23, 42, 0.6);
+  color: #f8fafc;
   font-size: 1rem;
   box-sizing: border-box;
+  transition: border-color 0.2s;
+}
+
+textarea:focus {
+  outline: none;
+  border-color: #60a5fa;
 }
 
 button {
-  margin-top: 1rem;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
-  border: 1px solid transparent;
-  background-color: #4facfe;
+  padding: 0.8rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  border-radius: 12px;
+  border: none;
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
   color: white;
-  border-radius: 8px;
+  cursor: pointer;
+  transition: transform 0.1s, opacity 0.2s;
 }
 
 button:hover {
-  background-color: #00f2fe;
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+button:active {
+  transform: translateY(0);
 }
 
 button:disabled {
-  background-color: #555;
+  background: #475569;
   cursor: not-allowed;
+  transform: none;
+}
+
+.button.secondary {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #cbd5e1;
 }
 
 .dashboard {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 2rem;
   width: 100%;
-  max-width: 800px;
+  max-width: 850px;
 }
 
 .flow-steps {
-  font-family: monospace;
-  background: #333;
-  padding: 0.5rem;
-  border-radius: 4px;
-  margin: 1rem 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 1.5rem 0;
 }
 
-code {
-  background-color: #333;
-  padding: 0.2rem 0.4rem;
-  border-radius: 4px;
+.step-badge {
+  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  color: #93c5fd;
+  padding: 0.4rem 0.8rem;
+  border-radius: 9999px;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.risk-badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 6px;
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 0.9rem;
 }
 
 .compliance-report pre {
   white-space: pre-wrap;
-  background-color: #000;
-  padding: 1rem;
-  border-radius: 4px;
-  border-left: 4px solid #4facfe;
-  font-size: 0.9rem;
+  background: #0f172a;
+  padding: 1.5rem;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  font-family: 'Fira Code', monospace;
+  font-size: 0.85rem;
+  color: #94a3b8;
+  overflow-x: auto;
+}
+
+.image-preview {
+  max-width: 200px;
+  max-height: 150px;
+  border-radius: 8px;
+  margin-top: 1rem;
+  border: 2px solid #3b82f6;
+}
+
+.preview-container {
+  position: relative;
+  display: inline-block;
+}
+
+.remove-btn {
+  position: absolute;
+  top: 5px;
+  right: -10px;
+  background: #ef4444;
+  color: white;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  line-height: 24px;
+  font-size: 12px;
 }
