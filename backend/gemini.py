@@ -7,6 +7,7 @@ from vertexai.generative_models import (
     Content
 )
 import os
+import base64
 
 PROJECT_ID = os.environ.get("GOOGLE_CLOUD_PROJECT", "YOUR_PROJECT_ID")
 LOCATION = os.environ.get("GOOGLE_CLOUD_LOCATION", "europe-west4")
@@ -53,36 +54,79 @@ SYSTEM_INSTRUCTION = """
 You are the AI Governance Operating System (AG-OS) Agent.
 Your primary directive is to ensure all AI-related requests comply with the EU AI Act and corporate safety policies.
 
+RISK CATEGORIES (EU AI Act):
+- Unacceptable: Prohibited AI practices (e.g., social scoring, biometric identification in public spaces).
+- High: AI in critical infrastructures, education, employment, law enforcement (requires strict governance).
+- Limited: AI with specific transparency obligations (e.g., chatbots).
+- Minimal: Most AI systems (e.g., spam filters, AI-enabled games).
+
 OPERATING PRINCIPLES:
-1. AUTONOMY: You proactively assess risks and take necessary actions (like notifying admins or logging results).
-2. PRECISION: Categorize risks into 'Unacceptable', 'High', 'Limited', or 'Minimal'.
-3. TRACEABILITY: Ensure every decision has a clear rationale for the audit trail.
+1. AUTONOMY: Proactively assess risks and take necessary actions using tools.
+2. PRECISION: Categorize risks exactly into one of the four categories above.
+3. TRACEABILITY: Provide a clear rationale.
 
 AVAILABLE ACTIONS:
-- If an analysis is complete and safe, suggest saving it to Google Docs for record-keeping using `save_to_google_docs`.
+- If an analysis is complete and 'Limited' or 'Minimal' risk, suggest saving it to Google Docs using `save_to_google_docs`.
 - If a request is 'High' or 'Unacceptable' risk, you MUST notify the admin using `notify_governance_admin`.
 
-Respond in a professional, authoritative tone.
+Respond with your final analysis and ensure you mention the Risk Level clearly.
 """
 
-model = GenerativeModel(
-    "gemini-1.5-pro",
-    system_instruction=SYSTEM_INSTRUCTION,
-    tools=[governance_tools]
-)
+def get_model():
+    return GenerativeModel(
+        "gemini-1.5-pro",
+        system_instruction=SYSTEM_INSTRUCTION,
+        tools=[governance_tools]
+    )
 
-def analyze_compliance(text):
+def analyze_compliance(text, image_data=None):
     """
     Analyzes user input with autonomous agent capabilities and function calling.
+    Handles recursive tool calls.
     """
-    try:
-        chat = model.start_chat()
-        response = chat.send_message(text)
+    model = get_model()
+    chat = model.start_chat()
 
-        # Check for function calls
-        # Note: In a production app, you'd handle the function call execution here
-        # and send the response back to the model. For the demo, we show the intent.
+    parts = [text]
+    if image_data:
+        # Expecting base64 image data like "data:image/png;base64,..."
+        try:
+            header, encoded = image_data.split(",", 1)
+            mime_type = header.split(":")[1].split(";")[0]
+            image_bytes = base64.b64decode(encoded)
+            parts.append(Part.from_data(data=image_bytes, mime_type=mime_type))
+        except Exception as e:
+            print(f"Error processing image: {e}")
 
-        return response.text
-    except Exception as e:
-        return f"Governance Analysis (Demo Mode): Analysis for '{text}'. Error: {str(e)}"
+    execution_steps = ["Input Received"]
+
+    response = chat.send_message(parts)
+
+    max_iterations = 5
+    for _ in range(max_iterations):
+        if not response.candidates[0].function_calls:
+            break
+
+        function_calls = response.candidates[0].function_calls
+        tool_responses = []
+
+        for fc in function_calls:
+            execution_steps.append(f"Executing: {fc.name}")
+            # Mocking tool execution for demo
+            mock_result = {"status": "success", "message": f"Action {fc.name} completed successfully."}
+
+            tool_responses.append(
+                Part.from_function_response(
+                    name=fc.name,
+                    response=mock_result
+                )
+            )
+
+        response = chat.send_message(tool_responses)
+
+    execution_steps.append("Analysis Finalized")
+
+    return {
+        "text": response.text,
+        "steps": execution_steps
+    }
