@@ -10,11 +10,11 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const handleSubmit = async (input) => {
+  const handleSubmit = async (input, image) => {
     setLoading(true);
     setError(null);
     try {
-      const res = await processInput(input);
+      const res = await processInput(input, image);
       setData(res);
     } catch (err) {
       setError(err.message);
@@ -25,18 +25,28 @@ export default function App() {
 
   return (
     <div className="container">
-      <h1>AI Governance OS</h1>
+      <header>
+        <h1>AI Governance OS</h1>
+        <p style={{color: "#94a3b8", marginTop: "-1rem"}}>Autonomous EU AI Act Compliance Engine</p>
+      </header>
+
       <InputPanel onSubmit={handleSubmit} disabled={loading} />
 
-      {loading && <p>Processing with Gemini 1.5 Pro...</p>}
-      {error && <p style={{color: 'red'}}>Error: {error}</p>}
+      {loading && (
+        <div className="loading-state">
+          <div className="spinner"></div>
+          <p>Gemini 1.5 Pro is analyzing regulatory alignment...</p>
+        </div>
+      )}
+
+      {error && <div className="error-panel">Error: {error}</div>}
 
       {data && (
         <div className="dashboard">
           <FlowGraph result={data.result} />
           <AuditTimeline audit={data.audit} />
-          <div className="compliance-report">
-            <h2>Compliance Analysis</h2>
+          <div className="panel glass compliance-report">
+            <h2>Raw Agent Response</h2>
             <pre>{data.compliance_report}</pre>
           </div>
         </div>
