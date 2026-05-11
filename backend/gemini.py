@@ -7,6 +7,7 @@ from vertexai.generative_models import (
     Content
 )
 import os
+import json
 
 PROJECT_ID = os.environ.get("GOOGLE_CLOUD_PROJECT", "YOUR_PROJECT_ID")
 LOCATION = os.environ.get("GOOGLE_CLOUD_LOCATION", "europe-west4")
@@ -58,6 +59,11 @@ OPERATING PRINCIPLES:
 2. PRECISION: Categorize risks into 'Unacceptable', 'High', 'Limited', or 'Minimal'.
 3. TRACEABILITY: Ensure every decision has a clear rationale for the audit trail.
 
+MANDATORY OUTPUT FORMAT:
+You MUST always include the following markers in your final response:
+RISK: [Unacceptable/High/Limited/Minimal]
+RATIONALE: [Detailed explanation of your governance decision]
+
 AVAILABLE ACTIONS:
 - If an analysis is complete and safe, suggest saving it to Google Docs for record-keeping using `save_to_google_docs`.
 - If a request is 'High' or 'Unacceptable' risk, you MUST notify the admin using `notify_governance_admin`.
@@ -71,18 +77,62 @@ model = GenerativeModel(
     tools=[governance_tools]
 )
 
-def analyze_compliance(text):
+def analyze_compliance(text, image_bytes=None, mime_type=None):
     """
     Analyzes user input with autonomous agent capabilities and function calling.
+    Supports multimodality if image_bytes is provided.
     """
+    steps = ["Input Received", "AI Agent Initialization"]
+
+    contents = []
+    if image_bytes and mime_type:
+        contents.append(Part.from_data(data=image_bytes, mime_type=mime_type))
+        steps.append("Image Data Processed")
+
+    contents.append(text)
+
     try:
         chat = model.start_chat()
-        response = chat.send_message(text)
+        response = chat.send_message(contents)
 
-        # Check for function calls
-        # Note: In a production app, you'd handle the function call execution here
-        # and send the response back to the model. For the demo, we show the intent.
+        # Agentic Loop for Function Calling
+        iterations = 0
+        max_iterations = 5
 
-        return response.text
+        while response.candidates[0].content.parts[0].function_call and iterations < max_iterations:
+            iterations += 1
+            function_call = response.candidates[0].content.parts[0].function_call
+            function_name = function_call.name
+
+            steps.append(f"Tool Call: {function_name}")
+
+            # Mocking the actual tool execution for the demo
+            # In a real app, you would execute the code here
+            if function_name == "save_to_google_docs":
+                args = function_call.args
+                tool_result = f"Document '{args.get('title')}' successfully created in Google Docs."
+            elif function_name == "notify_governance_admin":
+                args = function_call.args
+                tool_result = f"Governance administrator notified of {args.get('risk_level')} risk. Ticket #GOV-{iterations}42 generated."
+            else:
+                tool_result = f"Successfully executed {function_name}"
+
+            # Send the result back to the model
+            response = chat.send_message(
+                Part.from_function_response(
+                    name=function_name,
+                    response={"result": tool_result}
+                )
+            )
+
+        steps.append("Governance Analysis Finalized")
+
+        return {
+            "text": response.text,
+            "steps": steps
+        }
     except Exception as e:
-        return f"Governance Analysis (Demo Mode): Analysis for '{text}'. Error: {str(e)}"
+        return {
+            "text": f"Governance Analysis (Error): {str(e)}",
+            "steps": steps + ["Analysis Failed"]
+        }

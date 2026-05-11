@@ -3,6 +3,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import hashlib
 import datetime
+import re
+import base64
+from typing import Optional
 from gemini import analyze_compliance
 
 app = FastAPI()
@@ -16,6 +19,7 @@ app.add_middleware(
 
 class ProcessRequest(BaseModel):
     input: str
+    image: Optional[str] = None # Base64 data URL
 
 @app.get("/")
 def read_root():
@@ -24,24 +28,44 @@ def read_root():
 @app.post("/process")
 async def process_input(request: ProcessRequest):
     user_input = request.input
+    image_data = request.image
+
+    image_bytes = None
+    mime_type = None
+
+    if image_data and "base64," in image_data:
+        try:
+            header, encoded = image_data.split("base64,")
+            mime_type = header.replace("data:", "").replace(";", "")
+            image_bytes = base64.b64decode(encoded)
+        except Exception as e:
+            print(f"Error decoding image: {e}")
 
     try:
         # 1. AI Analysis (Governance Layer)
-        compliance_report = analyze_compliance(user_input)
+        analysis_result = analyze_compliance(user_input, image_bytes, mime_type)
+        compliance_report = analysis_result["text"]
+        steps = analysis_result["steps"]
 
-        # 2. Mock Logic for Demo (Mapping LLM output to UI structure)
-        # In a real app, you'd parse the LLM output properly
-        risk_level = "High" if "high" in compliance_report.lower() else "Low"
+        # 2. Risk Parsing using Regex
+        risk_match = re.search(r"RISK:\s*(Unacceptable|High|Limited|Minimal)", compliance_report, re.IGNORECASE)
+        rationale_match = re.search(r"RATIONALE:\s*(.*)", compliance_report, re.IGNORECASE | re.DOTALL)
+
+        risk_level = risk_match.group(1) if risk_match else "Unknown"
+        rationale = rationale_match.group(1).strip() if rationale_match else "No rationale provided."
 
         result = {
             "risk": risk_level,
-            "steps": ["Input Received", "Compliance Check", "Policy Enforcement", "Output Generated"],
-            "processed_output": f"Safe execution of: {user_input[:50]}..."
+            "rationale": rationale,
+            "steps": steps,
+            "processed_output": f"Safe execution of request. [Audit Trail Hash: {hashlib.sha256(user_input.encode()).hexdigest()[:10]}]"
         }
 
         # 3. Audit Trail
         timestamp = datetime.datetime.now().isoformat()
-        audit_hash = hashlib.sha256(f"{user_input}{timestamp}".encode()).hexdigest()
+        # Hash includes image if present
+        hash_input = f"{user_input}{image_data if image_data else ''}{timestamp}"
+        audit_hash = hashlib.sha256(hash_input.encode()).hexdigest()
 
         audit = {
             "hash": audit_hash,
@@ -51,7 +75,7 @@ async def process_input(request: ProcessRequest):
         return {
             "result": result,
             "audit": audit,
-            "compliance_report": compliance_report # Added for extra detail
+            "compliance_report": compliance_report
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
