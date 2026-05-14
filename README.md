@@ -15,10 +15,11 @@ As AI scaling accelerates, organizations face a **compliance wall**. The **EU AI
 **AG-OS** is the world's first autonomous AI Governance Operating System. It sits between your users and your AI models, providing a real-time, verifiable safety layer.
 
 ### ✨ Key Features
-- **🧠 Autonomous Agent Analysis**: Powered by **Gemini 1.5 Pro**, AG-OS analyzes every request against the EU AI Act risk categories in milliseconds.
-- **⚡ Proactive Mitigation**: Automatically triggers admin notifications for high-risk requests or saves compliant reports to Google Docs.
-- **🧾 Immutable Audit Trail**: Generates a cryptographic hash for every interaction, ensuring 100% traceability for regulators.
-- **🎨 Pro Dashboard**: A high-fidelity React interface showing real-time execution flows and compliance heatmaps.
+- **🧠 Autonomous Agentic Workflow**: Powered by **Gemini 1.5 Pro**, AG-OS uses a recursive function-calling loop to autonomously analyze, mitigate, and document risks.
+- **📷 Multimodal Governance**: Analyze not just text, but also screenshots, UI mockups, and system diagrams for compliance.
+- **⚡ Proactive Mitigation**: Automatically triggers `notify_governance_admin` for high-risk requests or logs compliant reports via `save_to_google_docs`.
+- **🧾 Immutable Audit Trail**: Generates a cryptographic SHA-256 hash for every interaction (including image data), ensuring 100% traceability for regulators.
+- **🎨 High-Fidelity Dashboard**: A modern, glassmorphism React interface visualizing the agent's internal "thought process" and multi-step execution flow.
 
 ---
 
