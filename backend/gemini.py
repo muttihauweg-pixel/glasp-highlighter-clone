@@ -63,6 +63,10 @@ AVAILABLE ACTIONS:
 - If a request is 'High' or 'Unacceptable' risk, you MUST notify the admin using `notify_governance_admin`.
 
 Respond in a professional, authoritative tone.
+
+IMPORTANT: You MUST include the following markers in your final response:
+RISK: [Unacceptable | High | Limited | Minimal]
+RATIONALE: [Detailed explanation of your decision]
 """
 
 model = GenerativeModel(
@@ -71,18 +75,62 @@ model = GenerativeModel(
     tools=[governance_tools]
 )
 
-def analyze_compliance(text):
+def analyze_compliance(text, image_data=None):
     """
     Analyzes user input with autonomous agent capabilities and function calling.
     """
     try:
+        # Prepare parts for multimodal input
+        parts = [text]
+        if image_data:
+            # image_data is expected to be base64 string
+            if isinstance(image_data, str) and image_data.startswith("data:"):
+                header, base64_str = image_data.split(",", 1)
+                mime_type = header.split(";")[0].split(":")[1]
+                import base64
+                image_bytes = base64.b64decode(base64_str)
+                parts.append(Part.from_data(data=image_bytes, mime_type=mime_type))
+
         chat = model.start_chat()
-        response = chat.send_message(text)
+        response = chat.send_message(parts)
 
-        # Check for function calls
-        # Note: In a production app, you'd handle the function call execution here
-        # and send the response back to the model. For the demo, we show the intent.
+        execution_steps = ["Initial Analysis Started"]
 
-        return response.text
+        # Iterative loop to handle function calls (max 5 iterations)
+        for _ in range(5):
+            found_call = False
+            # Check for function calls in the current response
+            if response.candidates and response.candidates[0].content.parts:
+                for part in response.candidates[0].content.parts:
+                    if part.function_call:
+                        found_call = True
+                        call = part.function_call
+                        name = call.name
+                        args = call.args
+
+                        execution_steps.append(f"Action: {name}")
+
+                        # Mock execution
+                        mock_response = {"status": "success", "message": f"Mock executed {name}"}
+
+                        response = chat.send_message(
+                            Part.from_function_response(
+                                name=name,
+                                response=mock_response
+                            )
+                        )
+                        break # Process one call at a time for simplicity in demo
+
+            if not found_call:
+                break
+
+        execution_steps.append("Final Policy Decision Reached")
+        return {
+            "text": response.text,
+            "steps": execution_steps
+        }
     except Exception as e:
-        return f"Governance Analysis (Demo Mode): Analysis for '{text}'. Error: {str(e)}"
+        return {
+            "text": f"Governance Analysis (Demo Mode): Analysis failed. Error: {str(e)}",
+            "steps": ["Error encountered"]
+        }
