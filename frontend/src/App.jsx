@@ -10,11 +10,12 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const handleSubmit = async (input) => {
+  const handleSubmit = async (input, imageData) => {
     setLoading(true);
     setError(null);
+    setData(null);
     try {
-      const res = await processInput(input);
+      const res = await processInput(input, imageData);
       setData(res);
     } catch (err) {
       setError(err.message);
@@ -25,22 +26,53 @@ export default function App() {
 
   return (
     <div className="container">
-      <h1>AI Governance OS</h1>
-      <InputPanel onSubmit={handleSubmit} disabled={loading} />
+      <header>
+        <div className="logo">🛡️ AG-OS</div>
+        <h1>AI Governance Operating System</h1>
+        <p className="subtitle">Powered by Gemini 1.5 Pro</p>
+      </header>
 
-      {loading && <p>Processing with Gemini 1.5 Pro...</p>}
-      {error && <p style={{color: 'red'}}>Error: {error}</p>}
+      <main className="dashboard-grid">
+        <section className="input-section">
+          <InputPanel onSubmit={handleSubmit} disabled={loading} />
 
-      {data && (
-        <div className="dashboard">
-          <FlowGraph result={data.result} />
-          <AuditTimeline audit={data.audit} />
-          <div className="compliance-report">
-            <h2>Compliance Analysis</h2>
-            <pre>{data.compliance_report}</pre>
-          </div>
-        </div>
-      )}
+          {error && (
+            <div className="error-panel">
+              <h3>⚠️ Analysis Error</h3>
+              <p>{error}</p>
+            </div>
+          )}
+
+          {loading && (
+            <div className="loading-state">
+              <div className="spinner"></div>
+              <p>Gemini is performing autonomous governance analysis...</p>
+            </div>
+          )}
+        </section>
+
+        {data && (
+          <>
+            <div className="main-viz">
+              <FlowGraph result={data.result} />
+            </div>
+
+            <div className="side-viz">
+              <AuditTimeline audit={data.audit} />
+              <div className="panel report-panel">
+                <h2>Full Agent Output</h2>
+                <div className="report-content">
+                  <pre>{data.compliance_report}</pre>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+      </main>
+
+      <footer>
+        <p>© 2024 AI Governance OS - Strategic Google AI Hackathon Entry</p>
+      </footer>
     </div>
   );
 }
