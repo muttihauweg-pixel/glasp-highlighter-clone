@@ -7,6 +7,7 @@ from vertexai.generative_models import (
     Content
 )
 import os
+import base64
 
 PROJECT_ID = os.environ.get("GOOGLE_CLOUD_PROJECT", "YOUR_PROJECT_ID")
 LOCATION = os.environ.get("GOOGLE_CLOUD_LOCATION", "europe-west4")
@@ -58,6 +59,11 @@ OPERATING PRINCIPLES:
 2. PRECISION: Categorize risks into 'Unacceptable', 'High', 'Limited', or 'Minimal'.
 3. TRACEABILITY: Ensure every decision has a clear rationale for the audit trail.
 
+MANDATORY OUTPUT FORMAT:
+Your final response MUST include the following markers:
+RISK: [Unacceptable/High/Limited/Minimal]
+RATIONALE: [Detailed explanation of why this risk level was chosen]
+
 AVAILABLE ACTIONS:
 - If an analysis is complete and safe, suggest saving it to Google Docs for record-keeping using `save_to_google_docs`.
 - If a request is 'High' or 'Unacceptable' risk, you MUST notify the admin using `notify_governance_admin`.
@@ -71,18 +77,57 @@ model = GenerativeModel(
     tools=[governance_tools]
 )
 
-def analyze_compliance(text):
+def analyze_compliance(text, image_data=None):
     """
     Analyzes user input with autonomous agent capabilities and function calling.
+    Supports multimodal input.
     """
     try:
+        content = [text]
+        if image_data:
+            # Assuming image_data is base64 string like "data:image/png;base64,..."
+            if "," in image_data:
+                header, encoded = image_data.split(",", 1)
+                mime_type = header.split(";")[0].split(":")[1]
+            else:
+                encoded = image_data
+                mime_type = "image/png" # Default
+
+            image_bytes = base64.b64decode(encoded)
+            content.append(Part.from_data(data=image_bytes, mime_type=mime_type))
+
         chat = model.start_chat()
-        response = chat.send_message(text)
+        response = chat.send_message(content)
 
-        # Check for function calls
-        # Note: In a production app, you'd handle the function call execution here
-        # and send the response back to the model. For the demo, we show the intent.
+        tool_calls_executed = []
 
-        return response.text
+        # Agentic Loop: Handle potential function calls
+        max_iterations = 5
+        for _ in range(max_iterations):
+            if not response.candidates[0].content.parts[0].function_call:
+                break
+
+            function_call = response.candidates[0].content.parts[0].function_call
+            function_name = function_call.name
+            args = function_call.args
+
+            # Mocking function execution for the demo
+            tool_calls_executed.append(f"Tool Executed: {function_name}")
+
+            # Send mock response back to model
+            response = chat.send_message(
+                Part.from_function_response(
+                    name=function_name,
+                    response={"result": "Action successfully logged and executed by AG-OS system."}
+                )
+            )
+
+        return {
+            "text": response.text,
+            "steps": tool_calls_executed
+        }
     except Exception as e:
-        return f"Governance Analysis (Demo Mode): Analysis for '{text}'. Error: {str(e)}"
+        return {
+            "text": f"Governance Analysis (Error): {str(e)}",
+            "steps": ["Error in analysis"]
+        }

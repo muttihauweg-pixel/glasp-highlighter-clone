@@ -1,11 +1,15 @@
-export async function processInput(input) {
+export async function processInput(input, imageData = null) {
   const res = await fetch("http://localhost:8000/process", {
     method: "POST",
     headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({ input })
+    body: JSON.stringify({
+      input: input,
+      image_data: imageData
+    })
   });
   if (!res.ok) {
-    throw new Error("Failed to process input");
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.detail || "Failed to process input");
   }
   return res.json();
 }

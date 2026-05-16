@@ -1,8 +1,10 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from typing import Optional
 import hashlib
 import datetime
+import re
 from gemini import analyze_compliance
 
 app = FastAPI()
@@ -16,6 +18,7 @@ app.add_middleware(
 
 class ProcessRequest(BaseModel):
     input: str
+    image_data: Optional[str] = None
 
 @app.get("/")
 def read_root():
@@ -24,24 +27,33 @@ def read_root():
 @app.post("/process")
 async def process_input(request: ProcessRequest):
     user_input = request.input
+    image_data = request.image_data
 
     try:
         # 1. AI Analysis (Governance Layer)
-        compliance_report = analyze_compliance(user_input)
+        report_data = analyze_compliance(user_input, image_data)
+        full_text = report_data["text"]
+        agent_steps = report_data["steps"]
 
-        # 2. Mock Logic for Demo (Mapping LLM output to UI structure)
-        # In a real app, you'd parse the LLM output properly
-        risk_level = "High" if "high" in compliance_report.lower() else "Low"
+        # 2. Extract Risk and Rationale using regex
+        risk_match = re.search(r"RISK:\s*(Unacceptable|High|Limited|Minimal|Low)", full_text, re.IGNORECASE)
+        risk_level = risk_match.group(1) if risk_match else "Minimal"
 
-        result = {
-            "risk": risk_level,
-            "steps": ["Input Received", "Compliance Check", "Policy Enforcement", "Output Generated"],
-            "processed_output": f"Safe execution of: {user_input[:50]}..."
-        }
+        # Normalize risk levels for UI
+        if risk_level.lower() == "low":
+            risk_level = "Minimal"
 
         # 3. Audit Trail
         timestamp = datetime.datetime.now().isoformat()
-        audit_hash = hashlib.sha256(f"{user_input}{timestamp}".encode()).hexdigest()
+        # Hash including image data if present for integrity
+        input_to_hash = f"{user_input}{image_data or ''}{timestamp}"
+        audit_hash = hashlib.sha256(input_to_hash.encode()).hexdigest()
+
+        result = {
+            "risk": risk_level,
+            "steps": ["Input Received", "Gemini Analysis"] + agent_steps + ["Policy Enforcement", "Audit Logged"],
+            "processed_output": full_text
+        }
 
         audit = {
             "hash": audit_hash,
@@ -51,7 +63,7 @@ async def process_input(request: ProcessRequest):
         return {
             "result": result,
             "audit": audit,
-            "compliance_report": compliance_report # Added for extra detail
+            "compliance_report": full_text
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
