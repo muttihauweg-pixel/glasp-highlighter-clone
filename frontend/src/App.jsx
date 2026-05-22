@@ -10,11 +10,11 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const handleSubmit = async (input) => {
+  const handleSubmit = async (input, image) => {
     setLoading(true);
     setError(null);
     try {
-      const res = await processInput(input);
+      const res = await processInput(input, image);
       setData(res);
     } catch (err) {
       setError(err.message);
@@ -28,8 +28,8 @@ export default function App() {
       <h1>AI Governance OS</h1>
       <InputPanel onSubmit={handleSubmit} disabled={loading} />
 
-      {loading && <p>Processing with Gemini 1.5 Pro...</p>}
-      {error && <p style={{color: 'red'}}>Error: {error}</p>}
+      {loading && <div className="loading-state">🧠 AG-OS Agent is analyzing compliance with Gemini 1.5 Pro...</div>}
+      {error && <div className="panel error-panel" style={{borderColor: 'var(--error)', color: 'var(--error)'}}>Error: {error}</div>}
 
       {data && (
         <div className="dashboard">
