@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from typing import Optional
 import hashlib
 import datetime
 from gemini import analyze_compliance
@@ -16,6 +17,7 @@ app.add_middleware(
 
 class ProcessRequest(BaseModel):
     input: str
+    image: Optional[str] = None
 
 @app.get("/")
 def read_root():
@@ -24,24 +26,24 @@ def read_root():
 @app.post("/process")
 async def process_input(request: ProcessRequest):
     user_input = request.input
+    image_data = request.image
 
     try:
         # 1. AI Analysis (Governance Layer)
-        compliance_report = analyze_compliance(user_input)
+        analysis_result = analyze_compliance(user_input, image_data)
+        compliance_report = analysis_result["text"]
 
-        # 2. Mock Logic for Demo (Mapping LLM output to UI structure)
-        # In a real app, you'd parse the LLM output properly
-        risk_level = "High" if "high" in compliance_report.lower() else "Low"
-
+        # 2. Extract structured data from AI analysis
         result = {
-            "risk": risk_level,
-            "steps": ["Input Received", "Compliance Check", "Policy Enforcement", "Output Generated"],
-            "processed_output": f"Safe execution of: {user_input[:50]}..."
+            "risk": analysis_result.get("risk", "Unknown"),
+            "steps": analysis_result.get("steps", ["Input Received", "Compliance Check"]),
+            "processed_output": compliance_report[:200] + "..." if len(compliance_report) > 200 else compliance_report
         }
 
         # 3. Audit Trail
         timestamp = datetime.datetime.now().isoformat()
-        audit_hash = hashlib.sha256(f"{user_input}{timestamp}".encode()).hexdigest()
+        audit_input = f"{user_input}{image_data or ''}{timestamp}"
+        audit_hash = hashlib.sha256(audit_input.encode()).hexdigest()
 
         audit = {
             "hash": audit_hash,
