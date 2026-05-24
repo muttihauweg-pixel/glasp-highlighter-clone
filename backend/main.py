@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from typing import Optional
 import hashlib
 import datetime
 from gemini import analyze_compliance
@@ -16,6 +17,7 @@ app.add_middleware(
 
 class ProcessRequest(BaseModel):
     input: str
+    image: Optional[str] = None # Base64 encoded image
 
 @app.get("/")
 def read_root():
@@ -24,24 +26,18 @@ def read_root():
 @app.post("/process")
 async def process_input(request: ProcessRequest):
     user_input = request.input
+    image_data = request.image
 
     try:
         # 1. AI Analysis (Governance Layer)
-        compliance_report = analyze_compliance(user_input)
+        analysis_result = analyze_compliance(user_input, image_data)
 
-        # 2. Mock Logic for Demo (Mapping LLM output to UI structure)
-        # In a real app, you'd parse the LLM output properly
-        risk_level = "High" if "high" in compliance_report.lower() else "Low"
-
-        result = {
-            "risk": risk_level,
-            "steps": ["Input Received", "Compliance Check", "Policy Enforcement", "Output Generated"],
-            "processed_output": f"Safe execution of: {user_input[:50]}..."
-        }
-
-        # 3. Audit Trail
+        # 2. Audit Trail
         timestamp = datetime.datetime.now().isoformat()
-        audit_hash = hashlib.sha256(f"{user_input}{timestamp}".encode()).hexdigest()
+        # Include image data hash if present
+        image_hash = hashlib.sha256(image_data.encode()).hexdigest() if image_data else ""
+        audit_content = f"{user_input}{image_hash}{timestamp}"
+        audit_hash = hashlib.sha256(audit_content.encode()).hexdigest()
 
         audit = {
             "hash": audit_hash,
@@ -49,9 +45,13 @@ async def process_input(request: ProcessRequest):
         }
 
         return {
-            "result": result,
+            "result": {
+                "risk": analysis_result["risk"],
+                "steps": analysis_result["steps"],
+                "processed_output": analysis_result["rationale"] # Use rationale as processed output
+            },
             "audit": audit,
-            "compliance_report": compliance_report # Added for extra detail
+            "compliance_report": analysis_result["full_response"]
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
