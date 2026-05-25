@@ -10,11 +10,11 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const handleSubmit = async (input) => {
+  const handleSubmit = async (input, image) => {
     setLoading(true);
     setError(null);
     try {
-      const res = await processInput(input);
+      const res = await processInput(input, image);
       setData(res);
     } catch (err) {
       setError(err.message);
@@ -25,22 +25,50 @@ export default function App() {
 
   return (
     <div className="container">
-      <h1>AI Governance OS</h1>
-      <InputPanel onSubmit={handleSubmit} disabled={loading} />
+      <header>
+        <div className="logo">🛡️ AG-OS</div>
+        <h1>AI Governance Operating System</h1>
+        <p className="subtitle">Autonomous EU AI Act Compliance & Risk Orchestration</p>
+      </header>
 
-      {loading && <p>Processing with Gemini 1.5 Pro...</p>}
-      {error && <p style={{color: 'red'}}>Error: {error}</p>}
-
-      {data && (
-        <div className="dashboard">
-          <FlowGraph result={data.result} />
-          <AuditTimeline audit={data.audit} />
-          <div className="compliance-report">
-            <h2>Compliance Analysis</h2>
-            <pre>{data.compliance_report}</pre>
-          </div>
+      <main>
+        <div className="input-section">
+          <InputPanel onSubmit={handleSubmit} disabled={loading} />
         </div>
-      )}
+
+        {loading && (
+          <div className="loading-state">
+            <div className="spinner"></div>
+            <p>Gemini 1.5 Pro is analyzing compliance vectors...</p>
+          </div>
+        )}
+
+        {error && (
+          <div className="error-panel">
+            <strong>Analysis Failed:</strong> {error}
+          </div>
+        )}
+
+        {data && (
+          <div className="dashboard fade-in">
+            <div className="dashboard-grid">
+              <FlowGraph result={data.result} />
+              <AuditTimeline audit={data.audit} />
+            </div>
+
+            <div className="compliance-report panel">
+              <h2>Full Governance Report</h2>
+              <div className="report-content">
+                <pre>{data.compliance_report}</pre>
+              </div>
+            </div>
+          </div>
+        )}
+      </main>
+
+      <footer>
+        <p>Built with Gemini 1.5 Pro & Vertex AI | Google for Startups AI Agents Challenge</p>
+      </footer>
     </div>
   );
 }
