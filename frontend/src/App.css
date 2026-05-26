@@ -1,119 +1,189 @@
+/*
+ * AI Governance OS (AG-OS)
+ * High-fidelity glassmorphism aesthetic for Google for Startups Challenge.
+ */
+
 :root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  --bg-color: #0f172a;
+  --panel-bg: rgba(30, 41, 59, 0.7);
+  --accent-blue: #38bdf8;
+  --accent-purple: #818cf8;
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+  --risk-unacceptable: #ef4444;
+  --risk-high: #f97316;
+  --risk-limited: #eab308;
+  --risk-minimal: #22c55e;
 }
 
 body {
   margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
+  padding: 0;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background-color: var(--bg-color);
+  color: var(--text-main);
+  background-image:
+    radial-gradient(at 0% 0%, rgba(56, 189, 248, 0.15) 0px, transparent 50%),
+    radial-gradient(at 100% 0%, rgba(129, 140, 248, 0.15) 0px, transparent 50%);
   min-height: 100vh;
 }
 
-#root {
-  max-width: 1280px;
+.container {
+  max-width: 1200px;
   margin: 0 auto;
   padding: 2rem;
-  text-align: center;
-}
-
-.container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2rem;
-}
-
-.panel {
-  background-color: #1a1a1a;
-  border-radius: 8px;
-  padding: 1.5rem;
-  width: 100%;
-  max-width: 800px;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  text-align: left;
 }
 
 h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
-  margin-bottom: 0.5em;
-  background: linear-gradient(to right, #4facfe 0%, #00f2fe 100%);
+  font-size: 2.5rem;
+  font-weight: 800;
+  background: linear-gradient(to right, var(--accent-blue), var(--accent-purple));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+  margin-bottom: 2rem;
+  text-align: center;
 }
 
-textarea {
+.panel {
+  background: var(--panel-bg);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+}
+
+.input-panel textarea {
   width: 100%;
-  padding: 0.5rem;
-  border-radius: 4px;
-  border: 1px solid #333;
-  background-color: #2a2a2a;
+  background: rgba(15, 23, 42, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0.5rem;
+  padding: 1rem;
   color: white;
   font-size: 1rem;
+  resize: vertical;
+  margin-bottom: 1rem;
   box-sizing: border-box;
 }
 
-button {
-  margin-top: 1rem;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
+.multimodal-actions {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  align-items: center;
+}
+
+.btn {
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  font-weight: 600;
   cursor: pointer;
-  transition: border-color 0.25s;
-  border: 1px solid transparent;
-  background-color: #4facfe;
+  transition: all 0.2s;
+  border: none;
+}
+
+.primary-btn {
+  background: linear-gradient(to right, var(--accent-blue), var(--accent-purple));
   color: white;
-  border-radius: 8px;
+  width: 100%;
+  font-size: 1.1rem;
 }
 
-button:hover {
-  background-color: #00f2fe;
+.secondary-btn {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
 }
 
-button:disabled {
-  background-color: #555;
+.danger-btn {
+  background: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+}
+
+.btn:hover:not(:disabled) {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.btn:disabled {
+  opacity: 0.5;
   cursor: not-allowed;
 }
 
-.dashboard {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-  width: 100%;
-  max-width: 800px;
+.image-preview {
+  margin-bottom: 1rem;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  max-height: 200px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+.image-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.dashboard {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+.risk-badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.risk-unacceptable { background: var(--risk-unacceptable); color: white; }
+.risk-high { background: var(--risk-high); color: white; }
+.risk-limited { background: var(--risk-limited); color: black; }
+.risk-minimal { background: var(--risk-minimal); color: white; }
+
 .flow-steps {
-  font-family: monospace;
-  background: #333;
-  padding: 0.5rem;
-  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
   margin: 1rem 0;
 }
 
-code {
-  background-color: #333;
-  padding: 0.2rem 0.4rem;
-  border-radius: 4px;
+.step-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 0.375rem;
+  font-size: 0.9rem;
 }
 
-.compliance-report pre {
+.step-item::before {
+  content: '✓';
+  color: var(--accent-blue);
+  font-weight: bold;
+}
+
+.compliance-report {
+  grid-column: span 2;
+}
+
+pre {
   white-space: pre-wrap;
-  background-color: #000;
+  word-wrap: break-word;
+  background: rgba(0, 0, 0, 0.3);
   padding: 1rem;
-  border-radius: 4px;
-  border-left: 4px solid #4facfe;
+  border-radius: 0.5rem;
   font-size: 0.9rem;
+  line-height: 1.5;
+  color: #cbd5e1;
+}
+
+.audit-hash {
+  font-family: monospace;
+  color: var(--accent-blue);
+  font-size: 0.8rem;
+  word-break: break-all;
 }
