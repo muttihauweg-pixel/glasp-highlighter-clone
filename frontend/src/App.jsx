@@ -10,11 +10,11 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const handleSubmit = async (input) => {
+  const handleSubmit = async (input, image) => {
     setLoading(true);
     setError(null);
     try {
-      const res = await processInput(input);
+      const res = await processInput(input, image);
       setData(res);
     } catch (err) {
       setError(err.message);
