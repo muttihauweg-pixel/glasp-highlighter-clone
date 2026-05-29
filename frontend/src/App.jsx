@@ -10,11 +10,12 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const handleSubmit = async (input) => {
+  const handleSubmit = async (inputData) => {
     setLoading(true);
     setError(null);
+    setData(null);
     try {
-      const res = await processInput(input);
+      const res = await processInput(inputData);
       setData(res);
     } catch (err) {
       setError(err.message);
@@ -25,20 +26,38 @@ export default function App() {
 
   return (
     <div className="container">
-      <h1>AI Governance OS</h1>
+      <header>
+        <h1>AI Governance OS</h1>
+        <p className="subtitle">Autonomous EU AI Act Compliance & Orchestration</p>
+      </header>
+
       <InputPanel onSubmit={handleSubmit} disabled={loading} />
 
-      {loading && <p>Processing with Gemini 1.5 Pro...</p>}
-      {error && <p style={{color: 'red'}}>Error: {error}</p>}
+      {loading && (
+        <div className="loading-state">
+          <div className="spinner"></div>
+          Proactively Analyzing Governance Policies with Gemini 1.5 Pro...
+        </div>
+      )}
+
+      {error && (
+        <div className="panel" style={{ borderColor: '#ef4444' }}>
+          <p style={{ color: '#ef4444', margin: 0 }}><strong>Error:</strong> {error}</p>
+        </div>
+      )}
 
       {data && (
         <div className="dashboard">
-          <FlowGraph result={data.result} />
-          <AuditTimeline audit={data.audit} />
-          <div className="compliance-report">
-            <h2>Compliance Analysis</h2>
-            <pre>{data.compliance_report}</pre>
+          <div className="main-content">
+            <FlowGraph result={data.result} />
+            <div className="panel compliance-report" style={{ marginTop: '2rem' }}>
+              <h2>Full Governance Report</h2>
+              <pre>{data.compliance_report}</pre>
+            </div>
           </div>
+          <aside>
+            <AuditTimeline audit={data.audit} />
+          </aside>
         </div>
       )}
     </div>

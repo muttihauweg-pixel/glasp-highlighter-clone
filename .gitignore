@@ -1,0 +1,15 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+node_modules/
+dist/
+*.log
+.DS_Store
+.env
+playwright-report/
+test-results/
+screenshots/

@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from typing import Optional
 import hashlib
 import datetime
 from gemini import analyze_compliance
@@ -15,7 +16,8 @@ app.add_middleware(
 )
 
 class ProcessRequest(BaseModel):
-    input: str
+    text: str
+    image: Optional[str] = None
 
 @app.get("/")
 def read_root():
@@ -23,37 +25,26 @@ def read_root():
 
 @app.post("/process")
 async def process_input(request: ProcessRequest):
-    user_input = request.input
-
     try:
         # 1. AI Analysis (Governance Layer)
-        compliance_report = analyze_compliance(user_input)
-
-        # 2. Mock Logic for Demo (Mapping LLM output to UI structure)
-        # In a real app, you'd parse the LLM output properly
-        risk_level = "High" if "high" in compliance_report.lower() else "Low"
-
-        result = {
-            "risk": risk_level,
-            "steps": ["Input Received", "Compliance Check", "Policy Enforcement", "Output Generated"],
-            "processed_output": f"Safe execution of: {user_input[:50]}..."
-        }
+        analysis_result = analyze_compliance(request.text, request.image)
 
         # 3. Audit Trail
         timestamp = datetime.datetime.now().isoformat()
-        audit_hash = hashlib.sha256(f"{user_input}{timestamp}".encode()).hexdigest()
-
-        audit = {
-            "hash": audit_hash,
-            "timestamp": timestamp
-        }
+        audit_input = f"{request.text}{request.image or ''}{timestamp}"
+        audit_hash = hashlib.sha256(audit_input.encode()).hexdigest()
 
         return {
-            "result": result,
-            "audit": audit,
-            "compliance_report": compliance_report # Added for extra detail
+            "result": analysis_result["data"],
+            "audit": {
+                "hash": audit_hash,
+                "timestamp": timestamp
+            },
+            "compliance_report": analysis_result["full_response"]
         }
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
