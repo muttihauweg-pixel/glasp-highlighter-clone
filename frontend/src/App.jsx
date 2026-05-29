@@ -9,11 +9,11 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const handleSubmit = async (text, image) => {
+  const handleSubmit = async (text, image, video) => {
     setLoading(true);
     setError(null);
     try {
-      const res = await processListing(text, image);
+      const res = await processListing(text, image, video);
       setData(res);
     } catch (err) {
       setError(err.message);
@@ -25,11 +25,11 @@ export default function App() {
   return (
     <div className="container">
       <h1>eBay Verkaufs-Experte 🚀</h1>
-      <p className="subtitle">Verkaufe wie ein Profi mit psychologischer Preisstrategie & Foto-Regie</p>
+      <p className="subtitle">Verkaufe wie ein Profi mit Foto- & Video-Regie</p>
 
       <InputPanel onSubmit={handleSubmit} disabled={loading} />
 
-      {loading && <div className="loading-spinner">🧠 Die KI-Agenten arbeiten für dich...</div>}
+      {loading && <div className="loading-spinner">🧠 Die KI-Agenten analysieren Medien & Strategie...</div>}
 
       {error && <div style={{color: 'red', textAlign: 'center', marginBottom: '1rem'}}>
         Fehler: {error}

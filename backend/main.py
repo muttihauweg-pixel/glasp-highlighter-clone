@@ -18,6 +18,7 @@ app.add_middleware(
 class ListingRequest(BaseModel):
     input: str
     image: Optional[str] = None # Base64 image data
+    video: Optional[str] = None # Base64 video data
 
 @app.get("/")
 def read_root():
@@ -27,10 +28,11 @@ def read_root():
 async def process_input(request: ListingRequest):
     user_input = request.input
     image_data = request.image
+    video_data = request.video
 
     try:
         # 1. KI-Analyse (Multi-Agenten-System)
-        analysis = process_listing(user_input, image_data)
+        analysis = process_listing(user_input, image_data, video_data)
 
         # 2. Result Mapping
         result = {
@@ -41,7 +43,7 @@ async def process_input(request: ListingRequest):
 
         # 3. Audit Trail
         timestamp = datetime.datetime.now().isoformat()
-        content_to_hash = f"{user_input}{image_data or ''}{timestamp}"
+        content_to_hash = f"{user_input}{image_data or ''}{video_data or ''}{timestamp}"
         audit_hash = hashlib.sha256(content_to_hash.encode()).hexdigest()
 
         audit = {

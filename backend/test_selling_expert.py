@@ -12,7 +12,7 @@ from gemini import process_listing
 class TestSellingExpert(unittest.TestCase):
 
     @patch('gemini.get_model')
-    def test_process_listing_step1(self, mock_get_model):
+    def test_process_listing_medien_regie(self, mock_get_model):
         mock_model = MagicMock()
         mock_chat = MagicMock()
         mock_response = MagicMock()
@@ -21,20 +21,18 @@ class TestSellingExpert(unittest.TestCase):
         mock_model.start_chat.return_value = mock_chat
         mock_chat.send_message.return_value = mock_response
 
-        # Mock step 1 response
-        mock_response.text = "Das ist ein schönes Foto! Bitte lade noch ein Foto von der Rückseite hoch. Ist das Gerät voll funktionsfähig?"
+        mock_response.text = "Bitte lade noch ein Video hoch. Ist das Gerät voll funktionsfähig?"
         mock_candidate = MagicMock()
         mock_part = MagicMock()
         mock_part.function_call = None
         mock_candidate.content.parts = [mock_part]
         mock_response.candidates = [mock_candidate]
 
-        # Test with mock image
         mock_image = "data:image/jpeg;base64," + base64.b64encode(b"fake image data").decode()
-        result = process_listing("Hier ist mein iPhone", mock_image)
+        result = process_listing("Hier ist mein iPhone", mock_image, None)
 
-        self.assertEqual(result['step'], "Foto-Regie")
-        self.assertIn("Rückseite", result['text'])
+        self.assertEqual(result['step'], "Medien-Regie")
+        self.assertIn("Video", result['text'])
 
     @patch('gemini.get_model')
     def test_process_listing_final_step(self, mock_get_model):
@@ -46,7 +44,6 @@ class TestSellingExpert(unittest.TestCase):
         mock_model.start_chat.return_value = mock_chat
         mock_chat.send_message.return_value = mock_response
 
-        # Mock final listing response
         mock_response.text = "### 💥 Super iPhone 13\n---\n**📊 STRATEGIE:** Festpreis\n**Beschreibung:** Tolles Teil!"
         mock_candidate = MagicMock()
         mock_part = MagicMock()
@@ -54,7 +51,7 @@ class TestSellingExpert(unittest.TestCase):
         mock_candidate.content.parts = [mock_part]
         mock_response.candidates = [mock_candidate]
 
-        result = process_listing("Bereit für den Text", None)
+        result = process_listing("Bereit für den Text", None, None)
 
         self.assertEqual(result['step'], "Fertiges Inserat")
         self.assertIn("Super iPhone 13", result['text'])
