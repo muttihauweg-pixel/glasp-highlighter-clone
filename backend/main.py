@@ -19,27 +19,25 @@ class ProcessRequest(BaseModel):
 
 @app.get("/")
 def read_root():
-    return {"message": "AI Governance OS API"}
+    return {"message": "Happy eBay Assistent API 🌈"}
 
 @app.post("/process")
 async def process_input(request: ProcessRequest):
     user_input = request.input
 
     try:
-        # 1. AI Analysis (Governance Layer)
-        compliance_report = analyze_compliance(user_input)
+        # 1. KI-Analyse (Happy Assistant Ebene)
+        analysis = analyze_compliance(user_input)
 
-        # 2. Mock Logic for Demo (Mapping LLM output to UI structure)
-        # In a real app, you'd parse the LLM output properly
-        risk_level = "High" if "high" in compliance_report.lower() else "Low"
-
+        # 2. Result Mapping
         result = {
-            "risk": risk_level,
-            "steps": ["Input Received", "Compliance Check", "Policy Enforcement", "Output Generated"],
-            "processed_output": f"Safe execution of: {user_input[:50]}..."
+            "joy_score": analysis["joy_score"],
+            "rationale": analysis["rationale"],
+            "steps": analysis["steps"],
+            "processed_output": analysis["text"]
         }
 
-        # 3. Audit Trail
+        # 3. Fröhlicher Audit Trail
         timestamp = datetime.datetime.now().isoformat()
         audit_hash = hashlib.sha256(f"{user_input}{timestamp}".encode()).hexdigest()
 
@@ -51,7 +49,7 @@ async def process_input(request: ProcessRequest):
         return {
             "result": result,
             "audit": audit,
-            "compliance_report": compliance_report # Added for extra detail
+            "full_analysis": analysis
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

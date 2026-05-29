@@ -2,7 +2,6 @@ import { useState } from "react";
 import { processInput } from "./api";
 import InputPanel from "./components/InputPanel";
 import FlowGraph from "./components/FlowGraph";
-import AuditTimeline from "./components/AuditTimeline";
 import "./App.css";
 
 export default function App() {
@@ -25,19 +24,27 @@ export default function App() {
 
   return (
     <div className="container">
-      <h1>AI Governance OS</h1>
+      <h1>Happy eBay Assi 🌈</h1>
+      <p className="subtitle">"Dein fröhlicher persönlicher Shopper für eBay"</p>
+
       <InputPanel onSubmit={handleSubmit} disabled={loading} />
 
-      {loading && <p>Processing with Gemini 1.5 Pro...</p>}
-      {error && <p style={{color: 'red'}}>Error: {error}</p>}
+      {loading && <div className="loading-text">✨ Gemini 1.5 Pro sucht nach Freude... ✨</div>}
+      {error && <div className="error-msg">Hoppla! Sogar Assistenten haben mal einen schlechten Tag: {error}</div>}
 
       {data && (
         <div className="dashboard">
           <FlowGraph result={data.result} />
-          <AuditTimeline audit={data.audit} />
-          <div className="compliance-report">
-            <h2>Compliance Analysis</h2>
-            <pre>{data.compliance_report}</pre>
+
+          <div className="panel">
+            <h2>✨ Empfehlungen</h2>
+            <div className="compliance-report">
+              {data.result.processed_output}
+            </div>
+          </div>
+
+          <div className="audit-info">
+            Fröhliche Audit-ID: {data.audit.hash.substring(0, 12)}... | {new Date(data.audit.timestamp).toLocaleString("de-DE")}
           </div>
         </div>
       )}

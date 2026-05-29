@@ -12,19 +12,17 @@ export default function InputPanel({ onSubmit, disabled }) {
 
   return (
     <div className="panel">
-      <h2>Input Panel</h2>
+      <h2>🎁 Wonach suchst du heute?</h2>
       <form onSubmit={handleSubmit}>
         <textarea
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="Enter AI request (e.g., 'Analyze customer data for credit scoring')"
-          rows={5}
-          cols={50}
+          placeholder="Ich suche eine Vintage-Kamera, die funktioniert! Oder vielleicht ein paar bunte Socken?"
+          rows={4}
           disabled={disabled}
         />
-        <br />
         <button type="submit" disabled={disabled || !input.trim()}>
-          Process Request
+          {disabled ? "Freude verbreiten..." : "Finde mein Glücks-Angebot!"}
         </button>
       </form>
     </div>

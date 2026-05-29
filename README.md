@@ -1,42 +1,37 @@
-# 🚀 AI Governance OS (AG-OS)
-### *Bridging the Gap Between Innovation and Regulation*
+# 🌈 Happy eBay Assistent (Happy eBay Assi)
+### *Dein fröhlicher persönlicher Shopper für eBay*
 
-[![Built with Gemini](https://img.shields.io/badge/Built%20with-Gemini%201.5%20Pro-blue?logo=google-gemini)](https://deepmind.google/technologies/gemini/)
+[![Eingebaut mit Gemini](https://img.shields.io/badge/Gebaut%20mit-Gemini%201.5%20Pro-blue?logo=google-gemini)](https://deepmind.google/technologies/gemini/)
 [![GCP Native](https://img.shields.io/badge/Deployment-Cloud%20Run-orange?logo=google-cloud)](https://cloud.google.com/run)
 
 ---
 
-## 🌪 The Problem
-As AI scaling accelerates, organizations face a **compliance wall**. The **EU AI Act** and global regulations make manual AI oversight impossible. Enterprises are stuck between:
-- **Innovation Paralysis**: Slowing down deployment for manual checks.
-- **Regulatory Risk**: Deploying unvetted AI and risking multi-million Euro fines.
+## 🌟 Die Vision
+Tolle Angebote auf eBay zu finden, sollte ein freudiges Erlebnis sein. **Happy eBay Assi** ist ein KI-gestützter Assistent, der das Einkaufen in ein Vergnügen verwandelt. Er findet nicht nur Artikel; er findet *Glück*.
 
-## 🛡 The Solution: AG-OS
-**AG-OS** is the world's first autonomous AI Governance Operating System. It sits between your users and your AI models, providing a real-time, verifiable safety layer.
-
-### ✨ Key Features
-- **🧠 Autonomous Agent Analysis**: Powered by **Gemini 1.5 Pro**, AG-OS analyzes every request against the EU AI Act risk categories in milliseconds.
-- **⚡ Proactive Mitigation**: Automatically triggers admin notifications for high-risk requests or saves compliant reports to Google Docs.
-- **🧾 Immutable Audit Trail**: Generates a cryptographic hash for every interaction, ensuring 100% traceability for regulators.
-- **🎨 Pro Dashboard**: A high-fidelity React interface showing real-time execution flows and compliance heatmaps.
+## 🎁 Funktionen
+- **😊 Fröhliche Persönlichkeit**: Ein Einkaufsassistent, der immer positiv und hilfsbereit ist.
+- **🔍 Intelligente Entdeckung**: Angetrieben von **Gemini 1.5 Pro**, versteht er deine Wünsche und findet das perfekte eBay-Match.
+- **✨ Joy Score**: Jede Empfehlung kommt mit einem "Glücksfaktor", der erklärt, warum dieser Artikel Freude bereiten wird.
+- **🛍 Einfache Integration**: Durchsuche nahtlos eBay-Angebote mit einem freundlichen Guide.
 
 ---
 
-## 🛠 Tech Stack
-- **Frontend**: React (Vite), CSS3 (Custom Dashboard UI)
+## 🛠 Tech-Stack
+- **Frontend**: React (Vite), CSS3 (Fröhliche & Lebendige UI)
 - **Backend**: FastAPI (Python 3.10)
-- **AI Engine**: Vertex AI (Gemini 1.5 Pro)
+- **KI-Engine**: Vertex AI (Gemini 1.5 Pro)
 - **Deployment**: Docker + GCP Cloud Run
 
 ---
 
-## 🚀 Get Started in 60 Seconds
+## 🚀 Loslegen
 
-### 1. Prerequisites
-- [Google Cloud SDK](https://cloud.google.com/sdk) installed.
-- Vertex AI API enabled.
+### 1. Voraussetzungen
+- [Google Cloud SDK](https://cloud.google.com/sdk) installiert.
+- Vertex AI API aktiviert.
 
-### 2. Run Local Demo
+### 2. Lokale Demo ausführen
 ```bash
 # Backend
 cd backend
@@ -48,15 +43,3 @@ cd frontend
 npm install
 npm run dev
 ```
-
----
-
-## 📈 Roadmap: Scaling to 10/10
-- [ ] **Multi-Model Support**: Integration with Anthropic & OpenAI via Vertex Model Garden.
-- [ ] **Automated Remediation**: AI-powered rewriting of non-compliant prompts.
-- [ ] **Enterprise Connectors**: Full integration with Jira, Slack, and SAP.
-
----
-
-### **"Governance is no longer a bottleneck. It's a competitive advantage."**
-*Join the future of safe AI at [ai-governance-os.demo](https://ai-governance-os-xyz.a.run.app)*
