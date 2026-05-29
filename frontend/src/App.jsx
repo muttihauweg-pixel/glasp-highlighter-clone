@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { processInput } from "./api";
+import { processListing } from "./api";
 import InputPanel from "./components/InputPanel";
 import FlowGraph from "./components/FlowGraph";
 import "./App.css";
@@ -9,11 +9,11 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const handleSubmit = async (input) => {
+  const handleSubmit = async (text, image) => {
     setLoading(true);
     setError(null);
     try {
-      const res = await processInput(input);
+      const res = await processListing(text, image);
       setData(res);
     } catch (err) {
       setError(err.message);
@@ -24,28 +24,24 @@ export default function App() {
 
   return (
     <div className="container">
-      <h1>Happy eBay Assi 🌈</h1>
-      <p className="subtitle">"Dein fröhlicher persönlicher Shopper für eBay"</p>
+      <h1>eBay Verkaufs-Experte 🚀</h1>
+      <p className="subtitle">Verkaufe wie ein Profi mit psychologischer Preisstrategie & Foto-Regie</p>
 
       <InputPanel onSubmit={handleSubmit} disabled={loading} />
 
-      {loading && <div className="loading-text">✨ Gemini 1.5 Pro sucht nach Freude... ✨</div>}
-      {error && <div className="error-msg">Hoppla! Sogar Assistenten haben mal einen schlechten Tag: {error}</div>}
+      {loading && <div className="loading-spinner">🧠 Die KI-Agenten arbeiten für dich...</div>}
+
+      {error && <div style={{color: 'red', textAlign: 'center', marginBottom: '1rem'}}>
+        Fehler: {error}
+      </div>}
 
       {data && (
         <div className="dashboard">
           <FlowGraph result={data.result} />
 
-          <div className="panel">
-            <h2>✨ Empfehlungen</h2>
-            <div className="compliance-report">
-              {data.result.processed_output}
-            </div>
-          </div>
-
-          <div className="audit-info">
-            Fröhliche Audit-ID: {data.audit.hash.substring(0, 12)}... | {new Date(data.audit.timestamp).toLocaleString("de-DE")}
-          </div>
+          <p style={{fontSize: '0.8rem', textAlign: 'center', color: '#999'}}>
+            ID: {data.audit.hash.substring(0, 10)} | {new Date(data.audit.timestamp).toLocaleString("de-DE")}
+          </p>
         </div>
       )}
     </div>

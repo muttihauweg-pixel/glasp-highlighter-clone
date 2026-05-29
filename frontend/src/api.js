@@ -1,11 +1,11 @@
-export async function processInput(input) {
+export async function processListing(input, image) {
   const res = await fetch("http://localhost:8000/process", {
     method: "POST",
     headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({ input })
+    body: JSON.stringify({ input, image })
   });
   if (!res.ok) {
-    throw new Error("Failed to process input");
+    throw new Error("Fehler beim Verarbeiten des Inserats");
   }
   return res.json();
 }

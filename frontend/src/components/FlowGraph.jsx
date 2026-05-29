@@ -1,14 +1,12 @@
 export default function FlowGraph({ result }) {
   return (
     <div className="panel">
-      <h2>🌈 Überlegungen des Assistenten</h2>
-      <div className="joy-meter">
-        <strong>Glücksfaktor:</strong>
-        <span className="joy-badge">{result.joy_score}%</span>
+      <div className="status-badge">Aktueller Schritt: {result.current_step}</div>
+      <div className="output-content">
+        {result.processed_output}
       </div>
-      <p><strong>BEGRÜNDUNG:</strong> {result.rationale}</p>
-      <div className="flow-steps">
-        <strong>Ausführungspfad:</strong> {result.steps.join(" ✨ ")}
+      <div className="steps-trail">
+        Prozess: {result.steps.join(" ➔ ")}
       </div>
     </div>
   );
