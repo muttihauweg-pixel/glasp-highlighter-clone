@@ -39,23 +39,34 @@ export default function InputPanel({ onSubmit, disabled }) {
   };
 
   return (
-    <div className="panel">
-      <h2>📦 Neues Inserat erstellen</h2>
+    <div className="input-form">
+      <h2 style={{color: 'white', marginBottom: '20px'}}>📦 Neues Inserat erstellen</h2>
       <form onSubmit={handleSubmit}>
         <textarea
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="Beschreibe dein Produkt oder antworte der KI (z.B. 'iPhone 13, funktioniert super')"
-          rows={4}
+          rows={6}
           disabled={disabled}
+          style={{
+            marginBottom: '1.5rem',
+            background: 'rgba(0,0,0,0.2)',
+            border: '1px solid var(--glass-border)',
+            borderRadius: '12px',
+            color: 'white',
+            fontSize: '1rem'
+          }}
         />
 
-        <div style={{display: 'flex', gap: '1rem', marginBottom: '1rem'}}>
-          <div className="image-upload" style={{flex: 1}} onClick={() => fileInputRef.current.click()}>
+        <div className="image-upload-grid">
+          <div className="upload-box" onClick={() => fileInputRef.current.click()}>
             {image ? (
-              <img src={image} alt="Preview" className="preview-img" style={{maxHeight: '100px'}} />
+              <img src={image} alt="Preview" className="preview-img" />
             ) : (
-              <p>📸 Foto hochladen</p>
+              <div style={{color: 'var(--text-secondary)'}}>
+                <div style={{fontSize: '1.5rem', marginBottom: '0.5rem'}}>📸</div>
+                <div style={{fontSize: '0.8rem'}}>Foto hochladen</div>
+              </div>
             )}
             <input
               type="file"
@@ -66,11 +77,17 @@ export default function InputPanel({ onSubmit, disabled }) {
             />
           </div>
 
-          <div className="image-upload" style={{flex: 1}} onClick={() => videoInputRef.current.click()}>
+          <div className="upload-box" onClick={() => videoInputRef.current.click()}>
             {video ? (
-              <div style={{fontSize: '0.8rem'}}>📹 Video bereit ({Math.round(video.length/1024/1024)}MB)</div>
+              <div style={{fontSize: '0.8rem', color: 'var(--accent-cyan)'}}>
+                <div style={{fontSize: '1.5rem', marginBottom: '0.5rem'}}>✅</div>
+                Video bereit ({Math.round(video.length/1024/1024)}MB)
+              </div>
             ) : (
-              <p>🎥 Video hochladen (5-10s)</p>
+              <div style={{color: 'var(--text-secondary)'}}>
+                <div style={{fontSize: '1.5rem', marginBottom: '0.5rem'}}>🎥</div>
+                <div style={{fontSize: '0.8rem'}}>Video hochladen (max 15MB)</div>
+              </div>
             )}
             <input
               type="file"
@@ -82,7 +99,17 @@ export default function InputPanel({ onSubmit, disabled }) {
           </div>
         </div>
 
-        <button type="submit" disabled={disabled || (!input.trim() && !image && !video)}>
+        <button
+          type="submit"
+          disabled={disabled || (!input.trim() && !image && !video)}
+          style={{
+            width: '100%',
+            background: 'linear-gradient(90deg, var(--accent-purple), var(--accent-blue))',
+            padding: '16px',
+            fontSize: '1.1rem',
+            borderRadius: '12px'
+          }}
+        >
           {disabled ? "Experte analysiert..." : "Analyse starten"}
         </button>
       </form>
