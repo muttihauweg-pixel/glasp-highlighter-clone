@@ -56,5 +56,31 @@ class TestSellingExpert(unittest.TestCase):
         self.assertEqual(result['step'], "Fertiges Inserat")
         self.assertIn("Super iPhone 13", result['text'])
 
+    @patch('gemini.get_model')
+    def test_process_listing_strategie_step(self, mock_get_model):
+        mock_model = MagicMock()
+        mock_chat = MagicMock()
+        mock_response = MagicMock()
+
+        mock_get_model.return_value = mock_model
+        mock_model.start_chat.return_value = mock_chat
+        mock_chat.send_message.return_value = mock_response
+
+        mock_response.text = "**Strategie:** Nutze den Decoy-Effekt.\n**Preis:** 450€."
+
+        result = process_listing("Hier sind die Details", None, None)
+
+        self.assertEqual(result['step'], "Strategie & Preis")
+        self.assertIn("Decoy-Effekt", result['text'])
+
+    @patch('gemini.get_model')
+    def test_process_listing_error_handling(self, mock_get_model):
+        mock_get_model.side_effect = Exception("Vertex Error")
+
+        result = process_listing("test", None, None)
+
+        self.assertEqual(result['step'], "Fehler")
+        self.assertIn("Vertex Error", result['text'])
+
 if __name__ == '__main__':
     unittest.main()

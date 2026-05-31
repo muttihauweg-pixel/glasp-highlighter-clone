@@ -2,6 +2,7 @@ import { useState } from "react";
 import { processListing } from "./api";
 import InputPanel from "./components/InputPanel";
 import Login from "./components/Login";
+import FlowGraph from "./components/FlowGraph";
 import "./App.css";
 
 export default function App() {
@@ -91,23 +92,36 @@ export default function App() {
               </div>
             )}
             {data && (
-              <>
-                <div className="circular-progress">
-                  <span className="progress-value">84%</span>
+              <div style={{width: '100%', textAlign: 'left'}}>
+                <div style={{display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '30px'}}>
+                  <div className="circular-progress" style={{flexShrink: 0}}>
+                    <span className="progress-value">94%</span>
+                  </div>
+                  <div>
+                    <h2 style={{margin: '0 0 5px 0'}}>Joy Score: Hoch</h2>
+                    <p style={{color: 'var(--text-secondary)', margin: 0}}>Deine Anzeige ist bereit für eBay! ✨</p>
+                  </div>
                 </div>
-                <h2 style={{margin: '0 0 10px 0'}}>Joy Score</h2>
-                <p style={{color: 'var(--text-secondary)', textAlign: 'center'}}>
-                  Deine Anzeige wird von unseren KI-Agenten optimiert.<br />
-                  Aktueller Status: <strong>Feinschliff am Copywriting</strong>
-                </p>
-              </>
+
+                <div className="glass-panel" style={{background: 'rgba(255,255,255,0.05)', padding: '25px', borderRadius: '20px'}}>
+                  <h3 style={{color: 'var(--accent-purple)', marginTop: 0, borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '10px'}}>Optimierte eBay-Anzeige</h3>
+                  <div style={{whiteSpace: 'pre-wrap', lineHeight: '1.6', fontSize: '1rem', color: '#e2e8f0'}}>
+                    {data.result.processed_output}
+                  </div>
+                </div>
+              </div>
             )}
           </div>
         )}
 
         {activeTab === "Agenten" && (
           <div className="agent-grid fade-in">
-            {(data ? agents : agents).map(agent => (
+            {data && (
+              <div style={{gridColumn: '1 / -1', marginBottom: '20px'}}>
+                <FlowGraph result={data.result} />
+              </div>
+            )}
+            {agents.map(agent => (
               <div key={agent.name} className="agent-card">
                 <div className="agent-header">
                   <div className="agent-icon" style={{background: `${agent.color}22`, color: agent.color}}>

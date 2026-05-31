@@ -1,0 +1,40 @@
+# HIPPY EBAY ASSI - ULTIMATIVER "LAYOUT-TRANSFER" PROMPT FÜR GOOGLE AI STUDIO
+
+Kopiere diesen Prompt, um das exakte Layout, das Farbschema und die Hippy-Story in deine App zu übernehmen:
+
+---
+
+Erstelle eine Web-App namens "Hippy eBay Assistent". Die App soll exakt das folgende Layout und Design-System übernehmen:
+
+### 🎨 DESIGN-IDENTITÄT (HI-FI LAYOUT):
+- **Hintergrund:** Tiefes Blau-Schwarz (#0f172a).
+- **Karten:** "Glassmorphism"-Effekt (leicht transparent, weißlicher Rand mit Unschärfe/Blur).
+- **Farbverläufe:** Nutze für Buttons und Highlights Verläufe von 'Electric Purple' zu 'Deep Indigo'.
+- **Animationen:**
+  - Ein "schwebendes" (float) Maskottchen namens "Joy" oben links.
+  - Ein sanfter "Puls"-Effekt für den Haupt-Button ("Analyse starten").
+- **Schrift:** Moderne serifenlose Schrift (Inter oder ähnlich), weißer Text für maximale Lesbarkeit.
+
+### 📱 BENUTZEROBERFLÄCHE (UI-STRUKTUR):
+1. **Header:** Oben links das "Joy"-Icon und der Schriftzug "HIPPY eBay Assistent".
+2. **Main Dashboard:** Bestehend aus drei Tabs:
+   - **Tab 1: Vorschau** (Zeigt das finale Ergebnis: Titel, Preis, Beschreibung).
+   - **Tab 2: Bearbeiten** (Zentrales Textfeld "Wonach suchst du heute?" + Foto/Video-Upload-Sektion).
+   - **Tab 3: Agenten** (Zeigt den "Agentic Execution Trail" – eine Liste der Arbeitsschritte der KI).
+3. **Joy Score:** Eine kreisförmige oder balkenartige Anzeige im Header, die den aktuellen Optimierungsgrad des Inserats visualisiert.
+
+### 📖 DIE STORY & AGENTEN:
+"Hippy" ist der persönliche, fröhliche Coach für Privatverkäufer. Das KI-Backend besteht aus 4 spezialisierten Agenten:
+- **Foto-Direktor:** Analysiert Bilder/Videos auf Professionalität.
+- **Preis-Guru:** Nutzt psychologische Tricks (Anker-Preise) für maximale Gewinnspanne.
+- **Text-Genie:** Schreibt lockere, ehrliche Verkaufstexte auf Augenhöhe (Deutsch).
+- **Rechts-Profi:** Sorgt für die perfekte EU-Rechtssicherheit (Privatverkauf).
+
+### ⚙️ FUNKTIONALITÄT:
+- Unterstütze Multimodalität: Der Nutzer lädt ein Bild oder Video hoch und gibt einen kurzen Text ein.
+- Die KI soll pro Agent einen Arbeitsschritt (Execution Step) generieren und diesen im "Agenten"-Tab mit Status-Badges (Erfolg/Läuft) anzeigen.
+- Output: Titel, Preisempfehlung, Beschreibung und Rechtsklausel – alles auf Deutsch.
+
+---
+
+WICHTIG: Baue die App mit React und Tailwind CSS. Das Design muss extrem hochwertig und "joyful" wirken.
