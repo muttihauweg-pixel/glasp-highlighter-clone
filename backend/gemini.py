@@ -7,82 +7,117 @@ from vertexai.generative_models import (
     Content
 )
 import os
+import json
+import re
+import base64
 
 PROJECT_ID = os.environ.get("GOOGLE_CLOUD_PROJECT", "YOUR_PROJECT_ID")
 LOCATION = os.environ.get("GOOGLE_CLOUD_LOCATION", "europe-west4")
 
-# Initialize Vertex AI
-vertexai.init(project=PROJECT_ID, location=LOCATION)
+_VERTEX_INITIALIZED = False
 
-# --- 1. Define Function Calling Tools ---
-save_to_docs_declaration = FunctionDeclaration(
-    name="save_to_google_docs",
-    description="Saves the compliance report or processed output to a new Google Doc",
-    parameters={
-        "type": "object",
-        "properties": {
-            "title": {"type": "string", "description": "The title of the document"},
-            "content": {"type": "string", "description": "The text content to save"}
-        },
-        "required": ["title", "content"]
-    }
-)
+def init_vertex():
+    """Initializes Vertex AI once."""
+    global _VERTEX_INITIALIZED
+    if not _VERTEX_INITIALIZED:
+        try:
+            vertexai.init(project=PROJECT_ID, location=LOCATION)
+            _VERTEX_INITIALIZED = True
+        except Exception as e:
+            print(f"Vertex AI initialization skipped or failed: {e}")
 
-notify_admin_declaration = FunctionDeclaration(
-    name="notify_governance_admin",
-    description="Sends an urgent notification to the governance administrator for high-risk requests",
-    parameters={
-        "type": "object",
-        "properties": {
-            "risk_level": {"type": "string", "description": "The identified risk level"},
-            "reason": {"type": "string", "description": "Reason for the high-risk classification"}
-        },
-        "required": ["risk_level", "reason"]
-    }
-)
-
-governance_tools = Tool(
-    function_declarations=[
-        save_to_docs_declaration,
-        notify_admin_declaration
-    ]
-)
-
-# --- 2. System Instruction ---
+# --- System Instruction ---
 SYSTEM_INSTRUCTION = """
-You are the AI Governance Operating System (AG-OS) Agent.
-Your primary directive is to ensure all AI-related requests comply with the EU AI Act and corporate safety policies.
+# ROLLE & ARCHITEKTUR
+Du bist das Herzstück einer intelligenten eBay-Verkaufs-App für PRIVATVERKÄUFER. Du agierst als ein Multi-Agenten-System mit integrierten Rollen:
+1. **Foto- & Video-Regisseur / Produkt-Experte** (Analysiert Bilder und Videos (5-10s) und gibt Regie-Anweisungen)
+2. **Preis-Psychologe & Verkaufs-Stratege** (Decoy-Effekt und Price Anchoring)
+3. **Verkaufspsychologischer Copywriter** (Perfekte Verkaufstexte ohne KI-Sound)
+4. **Rechtsexperte & Qualitätsfilter** (Rechtssicherheit & Sprach-Feinschliff)
 
-OPERATING PRINCIPLES:
-1. AUTONOMY: You proactively assess risks and take necessary actions (like notifying admins or logging results).
-2. PRECISION: Categorize risks into 'Unacceptable', 'High', 'Limited', or 'Minimal'.
-3. TRACEABILITY: Ensure every decision has a clear rationale for the audit trail.
+# MULTIMODALE ANALYSE (BILD & VIDEO)
+- **Bilder:** Prüfe auf Winkel, Licht und Details.
+- **Videos (Neu!):** Analysiere 5-10 Sekunden Videos, um die Funktionalität zu prüfen (z.B. ein laufender Motor, ein leuchtendes Display, mechanische Bewegungen). Gib Feedback, ob das Video den Zustand gut belegt.
 
-AVAILABLE ACTIONS:
-- If an analysis is complete and safe, suggest saving it to Google Docs for record-keeping using `save_to_google_docs`.
-- If a request is 'High' or 'Unacceptable' risk, you MUST notify the admin using `notify_governance_admin`.
+# ARBEITSABLAUF
+SCHRITT 1: FOTO/VIDEO-REGIE & FUNKTIONS-CHECK
+- Identifiziere das Produkt.
+- Fordere fehlende Perspektiven an.
+- Nutze das Video, um die Funktionalität zu bestätigen.
 
-Respond in a professional, authoritative tone.
+*WICHTIG:* Beende IMMER mit: „Bitte lade restliche Medien hoch und sag mir: **Ist das Gerät voll funktionsfähig oder defekt?** (Schreibe danach 'Bereit für den Text')“
+
+SCHRITT 2: STRATEGIE & PREIS-PSYCHOLOGIE
+SCHRITT 3: TEXTERSTELLUNG & RECHTSKLAUSEL
+SCHRITT 4: QUALITÄTSFILTER
+
+# AUSGABE-FORMAT
+### 💥 [Titel]
+---
+**📊 STRATEGIE:** [Auktion/Festpreis]
+**💰 PREIS:** [Betrag]
+---
+**Beschreibung:** [Verkaufstext]
+---
+**⚖️ Rechtlicher Hinweis:** [Rechtstext]
 """
 
-model = GenerativeModel(
-    "gemini-1.5-pro",
-    system_instruction=SYSTEM_INSTRUCTION,
-    tools=[governance_tools]
-)
+def get_model():
+    init_vertex()
+    return GenerativeModel(
+        "gemini-1.5-pro",
+        system_instruction=SYSTEM_INSTRUCTION
+    )
 
-def analyze_compliance(text):
+def process_listing(text, image_data=None, video_data=None):
     """
-    Analyzes user input with autonomous agent capabilities and function calling.
+    Process user input, images, and videos for the eBay Selling Expert.
     """
     try:
+        model = get_model()
+        parts = [text]
+
+        if image_data:
+            if ";" in image_data:
+                header, data = image_data.split(",", 1)
+                mime_type = header.split(":")[1].split(";")[0]
+            else:
+                data = image_data
+                mime_type = "image/jpeg"
+
+            parts.append(Part.from_data(data=base64.b64decode(data), mime_type=mime_type))
+
+        if video_data:
+            if ";" in video_data:
+                header, data = video_data.split(",", 1)
+                mime_type = header.split(":")[1].split(";")[0]
+            else:
+                data = video_data
+                mime_type = "video/webm" # Default for many web recorders
+
+            parts.append(Part.from_data(data=base64.b64decode(data), mime_type=mime_type))
+
         chat = model.start_chat()
-        response = chat.send_message(text)
+        response = chat.send_message(parts)
 
-        # Check for function calls
-        # Note: In a production app, you'd handle the function call execution here
-        # and send the response back to the model. For the demo, we show the intent.
+        res_text = response.text
 
-        return response.text
+        current_step = "Medien-Regie"
+        if "### 💥" in res_text:
+            current_step = "Fertiges Inserat"
+        elif "Strategie" in res_text or "Preis" in res_text:
+            current_step = "Strategie & Preis"
+
+        execution_steps = ["Medien analysiert", f"Rolle: {current_step}"]
+
+        return {
+            "text": res_text,
+            "step": current_step,
+            "steps": execution_steps
+        }
     except Exception as e:
-        return f"Governance Analysis (Demo Mode): Analysis for '{text}'. Error: {str(e)}"
+        return {
+            "text": f"Fehler bei der Analyse: {str(e)}",
+            "step": "Fehler",
+            "steps": ["Abbruch wegen Fehler"]
+        }
